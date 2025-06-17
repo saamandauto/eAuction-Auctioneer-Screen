@@ -19,6 +19,18 @@
         (click)="activeTab = 'shortcuts'">
         Keyboard Shortcuts
       </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'localization'"
+        (click)="activeTab = 'localization'">
+        Localization
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'data'"
+        (click)="activeTab = 'data'">
+        Data Management
+      </button>
     </div>
     <div class="dialog-content">
       <div class="tab-content" *ngIf="activeTab === 'general'">
@@ -54,6 +66,13 @@
           <label class="toggle-label">Skip Action Confirmations</label>
           <label class="toggle">
             <input type="checkbox" [(ngModel)]="skipConfirmations" (change)="onToggleSkipConfirmations()">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-item">
+          <label class="toggle-label">Hammer Requires Reserve Met</label>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="hammerRequiresReserveMet" (change)="onToggleHammerRequiresReserveMet()">
             <span class="slider"></span>
           </label>
         </div>
@@ -106,6 +125,125 @@
           <div class="shortcut-item">
             <span class="shortcut-key"><span class="key">Alt</span>+<span class="key">S</span></span>
             <span class="shortcut-description">Settings</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Localization Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'localization'">
+        <div class="localization-container">
+          <div class="localization-section">
+            <h4>Language Settings</h4>
+            <p class="help-text">Choose your preferred language for the application interface.</p>
+            
+            <div class="localization-dropdown">
+              <label class="form-label">Language</label>
+              <select [(ngModel)]="currentLocale" (change)="onLanguageChange()" class="dropdown-select">
+                <option *ngFor="let language of availableLanguages" [value]="language.code">
+                  {{ language.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="localization-section">
+            <h4>Currency Settings</h4>
+            <p class="help-text">Choose your preferred currency for price display.</p>
+            
+            <div class="localization-dropdown">
+              <label class="form-label">Currency</label>
+              <select [(ngModel)]="selectedCurrencyCode" (change)="onCurrencyChange()" class="dropdown-select">
+                <option *ngFor="let currency of availableCurrencies" [value]="currency.code">
+                  {{ currency.symbol }} - {{ currency.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Management Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'data'">
+        <div class="data-management-container">
+          <h4>Data Seeding Tools</h4>
+          <p class="help-text">These tools will seed your Supabase database with sample data.</p>
+          
+          <div class="data-action-item">
+            <div class="action-description">
+              <h5>Seed Auction Data</h5>
+              <p>Populate the auction database with demo auction information.</p>
+            </div>
+            <button 
+              class="button button-primary" 
+              (click)="onSeedAuctionData()" 
+              [disabled]="isSeedingAuctionData">
+              {{ isSeedingAuctionData ? 'Seeding...' : 'Seed Auction Data' }}
+            </button>
+          </div>
+
+          <div class="data-action-item">
+            <div class="action-description">
+              <h5>Seed Lots</h5>
+              <p>Populate the database with sample auction lots.</p>
+            </div>
+            <button 
+              class="button button-primary" 
+              (click)="onSeedLots()" 
+              [disabled]="isSeedingLots">
+              {{ isSeedingLots ? 'Seeding...' : 'Seed Lots' }}
+            </button>
+          </div>
+
+          <div class="data-action-item">
+            <div class="action-description">
+              <h5>Seed Messages</h5>
+              <p>Populate the database with sample dealer messages.</p>
+            </div>
+            <button 
+              class="button button-primary" 
+              (click)="onSeedMessages()" 
+              [disabled]="isSeedingMessages">
+              {{ isSeedingMessages ? 'Seeding...' : 'Seed Messages' }}
+            </button>
+          </div>
+
+          <div class="data-action-item">
+            <div class="action-description">
+              <h5>Seed Lot User Activity</h5>
+              <p>Populate the database with sample viewer, watcher, and lead data.</p>
+            </div>
+            <button 
+              class="button button-primary" 
+              (click)="onSeedLotUserActivity()" 
+              [disabled]="isSeedingActivity">
+              {{ isSeedingActivity ? 'Seeding...' : 'Seed User Activity' }}
+            </button>
+          </div>
+
+          <div class="data-action-item">
+            <div class="action-description">
+              <h5>Seed Localization Content</h5>
+              <p>Populate the database with multilingual content for the application.</p>
+            </div>
+            <button 
+              class="button button-primary" 
+              (click)="onSeedContent()" 
+              [disabled]="isSeedingContent">
+              {{ isSeedingContent ? 'Seeding...' : 'Seed Content' }}
+            </button>
+          </div>
+
+          <div class="data-action-item">
+            <div class="action-description">
+              <h5>Seed Header Content</h5>
+              <p>Populate the database with header-specific localization content.</p>
+            </div>
+            <button 
+              class="button button-primary" 
+              (click)="onSeedHeaderContent()" 
+              [disabled]="isSeedingHeaderContent">
+              {{ isSeedingHeaderContent ? 'Seeding...' : 'Seed Header Content' }}
+            </button>
           </div>
         </div>
       </div>

@@ -13,7 +13,7 @@
         <button class="button button-primary" 
                 (click)="onSetAskingPrice()"
                 [disabled]="!isActive || !canControlLot || localAskingPrice <= (currentHighestBid || 0) || isAboveReserve">
-          New Asking Price
+          Asking Price
         </button>
       </div>
     </div>
@@ -26,7 +26,7 @@
                 [disabled]="!isActive || !canControlLot || bidIncrement <= 100">
           <i class="ri-subtract-line"></i>
         </button>
-        <span>£{{ bidIncrement }}</span>
+        <span>{{ localizationService.formatPrice(bidIncrement) }}</span>
         <button class="button button-icon" 
                 (click)="onAdjustBidIncrement(1)"
                 [disabled]="!isActive || !canControlLot">

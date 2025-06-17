@@ -1,12 +1,12 @@
 <div class="auction-details-feature">
   <app-auction-details
-    [soldLots]="soldLots"
-    [withdrawnLots]="withdrawnLots"
-    [totalBids]="totalBids"
-    [auctioneerBids]="auctioneerBids"
-    [dealerBids]="dealerBids"
-    [totalSoldValue]="totalSoldValue"
-    [totalReserveValue]="totalReserveValue"
+    [soldLots]="(soldLots$ | async) ?? 0"
+    [withdrawnLots]="(withdrawnLots$ | async) ?? 0"
+    [totalBids]="(totalBids$ | async) ?? 0"
+    [auctioneerBids]="(auctioneerBids$ | async) ?? 0"
+    [dealerBids]="(dealerBids$ | async) ?? 0"
+    [totalSoldValue]="(totalSoldValue$ | async) ?? 0"
+    [totalReserveValue]="(totalReserveValue$ | async) ?? 0"
     [performance]="(performance$ | async) || { sum: '-', percentage: '-' }">
   </app-auction-details>
 </div>

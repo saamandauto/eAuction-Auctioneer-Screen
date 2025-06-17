@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { LotStatus } from '../../models/enums';
 import { Bid, Dealer, LotDetails } from '../../models/interfaces';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
+import { LocalizationService } from '../../services/localization.service';
 
 @Component({
   selector: 'app-bid-controls',
@@ -36,7 +37,10 @@ export class BidControlsComponent {
   localAskingPrice = 0;
   showShortcutsInUI = false;
 
-  constructor(private keyboardShortcutService: KeyboardShortcutService) {
+  constructor(
+    private keyboardShortcutService: KeyboardShortcutService,
+    public localizationService: LocalizationService
+  ) {
     this.keyboardShortcutService.getShowShortcutsInUI().subscribe(show => {
       this.showShortcutsInUI = show;
     });

@@ -1,4 +1,4 @@
-import { Bid, Dealer, LotDetails, Message, ViewerInfo } from './interfaces';
+import { LotDetails, Dealer, Message, Bid } from './interfaces';
 import { LotStatus, HammerState } from './enums';
 
 /**
@@ -8,12 +8,16 @@ export interface AuctionState {
   // Auction meta info
   auctionTitle: string;
   currentDateTime: string;
+  auctionId: string;
+  auctionDate: string;
+  auctionCompany: string;
   
   // Auction state
   isAuctionStarted: boolean;
   isViewingLots: boolean;
   simulatedBiddingEnabled: boolean;
   skipConfirmations: boolean;
+  hammerRequiresReserveMet: boolean;
 
   // Lots and dealers
   currentLot: LotDetails | null;
@@ -21,12 +25,6 @@ export interface AuctionState {
   dealers: Dealer[];
   messages: Message[];
   bids: Bid[];
-
-  // User info
-  viewers: ViewerInfo[];
-  watchers: ViewerInfo[];
-  leads: ViewerInfo[];
-  onlineUsers: ViewerInfo[];
   
   // Dialog states
   isViewersDialogOpen: boolean;
@@ -47,14 +45,6 @@ export interface AuctionState {
   bidIncrement: number;
   newBidAmount: number;
   highestBid: Bid | null;
-
-  // Auction stats
-  soldLots: number;
-  withdrawnLots: number;
-  totalSoldValue: number;
-  totalReserveValue: number;
-  auctioneerBidsCount: number;
-  dealerBidsCount: number;
 
   // Selected dealer
   selectedDealer: Dealer | null;

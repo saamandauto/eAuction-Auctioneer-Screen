@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, from, catchError, of, tap, map, throwError, switchMap, forkJoin } from 'rxjs';
 import { SupabaseService } from './supabase.service';
-import { LotDetails, LotStatus, Bid, LotFinalState } from '../models/interfaces';
+import { LotDetails, LotStatus, Bid, LotFinalState, ViewerInfo } from '../models/interfaces';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -65,6 +65,47 @@ export class LotService {
       // Otherwise just update the basic lot data
       return this.saveBasicLotData(lot);
     }
+  }
+
+  /**
+   * Fetches user activity data (viewers, watchers, leads, online) for a specific lot
+   * @param lotNumber The lot number to fetch activity for
+   * @param activityType The type of activity to fetch (viewer, watcher, lead, online)
+   * @returns Observable with array of ViewerInfo
+   */
+  getLotUserActivity(lotNumber: number, activityType: string): Observable<ViewerInfo[]> {
+    return from(
+      this.supabaseService.getClient()
+        .from('lot_user_activity')
+        .select('*')
+        .eq('lot_number', lotNumber)
+        .eq('activity_type', activityType)
+        .order('last_active', { ascending: false })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error(`Error fetching ${activityType} data for lot ${lotNumber}:`, error);
+          return [];
+        }
+        
+        if (!data || data.length === 0) {
+          return [];
+        }
+        
+        // Map database fields to ViewerInfo interface
+        return data.map(item => ({
+          name: item.dealer_name,
+          dealerId: item.dealer_id,
+          type: item.dealer_type,
+          lastBuy: item.last_buy,
+          lastActive: item.last_active
+        }));
+      }),
+      catchError(err => {
+        console.error(`Error in getLotUserActivity for lot ${lotNumber}:`, err);
+        return of([]);
+      })
+    );
   }
 
   /**
@@ -254,6 +295,57 @@ export class LotService {
       catchError(err => {
         // Return a proper error instead of a fake success object
         return throwError(() => new Error(`Failed to seed lots in Supabase: ${err.message}`));
+      })
+    );
+  }
+
+  /**
+   * Calls the seed-lot-user-activity Supabase function to populate user activity data
+   * @returns Observable with the result of the operation
+   */
+  seedLotUserActivity(): Observable<any> {
+    const anon_key = environment.supabase.anonKey;
+    const supabase_url = environment.supabase.url;
+    
+    return from(
+      fetch(
+        `${supabase_url}/functions/v1/seed-lot-user-activity`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${anon_key}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      .then(async response => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorMessage = `HTTP error! status: ${response.status}`;
+          try {
+            // Try to parse the error response as JSON
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.error) {
+              errorMessage += ` - ${errorJson.error}`;
+            }
+          } catch {
+            // If parsing fails, just use the raw text
+            if (errorText) {
+              errorMessage += ` - ${errorText}`;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+        return response.json();
+      })
+    ).pipe(
+      tap(result => {
+        if (!result.success) {
+          throw new Error(`Failed to seed lot user activity: ${result.error || 'Unknown error'}`);
+        }
+      }),
+      catchError(err => {
+        return throwError(() => new Error(`Failed to seed lot user activity in Supabase: ${err.message}`));
       })
     );
   }

@@ -4,11 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { LotDetails, ViewerInfo, SortColumn, SortDirection } from '../../models/interfaces';
 import { UserListDialogComponent } from '../shared/user-list-dialog/user-list-dialog.component';
-import { MOCK_VIEWERS } from '../../data/mock-viewers';
-import { MOCK_WATCHERS } from '../../data/mock-watchers';
-import { MOCK_LEADS } from '../../data/mock-leads';
-import { MOCK_ONLINE } from '../../data/mock-online';
 import { ToastrService } from 'ngx-toastr';
+import { LotService } from '../../services/lot.service';
+import { LocalizationService } from '../../services/localization.service';
 
 @Component({
   selector: 'app-planned-lots',
@@ -22,7 +20,6 @@ import { ToastrService } from 'ngx-toastr';
   ],
   templateUrl: './planned-lots.component.html',
   styleUrls: ['./planned-lots.component.scss']
-  // Removed the host property that was overriding CSS media queries
 })
 export class PlannedLotsComponent implements OnInit {
   @Input() lots: LotDetails[] = [];
@@ -56,7 +53,11 @@ export class PlannedLotsComponent implements OnInit {
   // Reordering state
   isDragEnabled = false;
   
-  constructor(private toastr: ToastrService) {}
+  constructor(
+    private toastr: ToastrService,
+    private lotService: LotService,
+    public localizationService: LocalizationService
+  ) {}
   
   ngOnInit() {
     this.updateToggleVisibility();
@@ -182,8 +183,11 @@ export class PlannedLotsComponent implements OnInit {
   // Dialog methods
   openViewersDialog(lot: LotDetails): void {
     this.selectedLot = lot;
-    this.viewers = MOCK_VIEWERS.get(lot.lotNumber) || [];
-    this.isViewersDialogOpen = true;
+    this.lotService.getLotUserActivity(lot.lotNumber, 'viewer')
+      .subscribe(viewers => {
+        this.viewers = viewers;
+        this.isViewersDialogOpen = true;
+      });
   }
   
   closeViewersDialog(): void {
@@ -192,8 +196,11 @@ export class PlannedLotsComponent implements OnInit {
   
   openWatchersDialog(lot: LotDetails): void {
     this.selectedLot = lot;
-    this.watchers = MOCK_WATCHERS.get(lot.lotNumber) || [];
-    this.isWatchersDialogOpen = true;
+    this.lotService.getLotUserActivity(lot.lotNumber, 'watcher')
+      .subscribe(watchers => {
+        this.watchers = watchers;
+        this.isWatchersDialogOpen = true;
+      });
   }
   
   closeWatchersDialog(): void {
@@ -202,8 +209,11 @@ export class PlannedLotsComponent implements OnInit {
   
   openLeadsDialog(lot: LotDetails): void {
     this.selectedLot = lot;
-    this.leads = MOCK_LEADS.get(lot.lotNumber) || [];
-    this.isLeadsDialogOpen = true;
+    this.lotService.getLotUserActivity(lot.lotNumber, 'lead')
+      .subscribe(leads => {
+        this.leads = leads;
+        this.isLeadsDialogOpen = true;
+      });
   }
   
   closeLeadsDialog(): void {
@@ -212,8 +222,11 @@ export class PlannedLotsComponent implements OnInit {
   
   openOnlineDialog(lot: LotDetails): void {
     this.selectedLot = lot;
-    this.onlineUsers = MOCK_ONLINE.get(lot.lotNumber) || [];
-    this.isOnlineDialogOpen = true;
+    this.lotService.getLotUserActivity(lot.lotNumber, 'online')
+      .subscribe(onlineUsers => {
+        this.onlineUsers = onlineUsers;
+        this.isOnlineDialogOpen = true;
+      });
   }
   
   closeOnlineDialog(): void {

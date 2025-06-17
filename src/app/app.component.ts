@@ -18,10 +18,15 @@ import { SettingsPanelComponent } from './components/settings-panel/settings-pan
 import { AuctionEventService } from './auction/auction-event.service';
 import { AuctionStateService } from './auction/auction-state.service';
 import { LotStatus, HammerState } from './models/enums';
-import { LotService } from './services/lot.service';
 import { KeyboardShortcutService } from './services/keyboard-shortcut.service';
 import { ToastrService } from 'ngx-toastr';
 import { LotDetails } from './models/interfaces';
+import { AuctionLifecycleService } from './services/auction-lifecycle.service';
+import { LotManagementService } from './services/lot-management.service';
+import { BiddingOrchestrationService } from './services/bidding-orchestration.service';
+import { DialogService } from './services/dialog.service';
+import { MessagingService } from './services/messaging.service';
+import { LotUserActivityService } from './services/lot-user-activity.service';
 
 @Component({
   selector: 'app-root',
@@ -59,8 +64,13 @@ export class AppComponent implements OnInit, OnDestroy {
   
   constructor(
     public auctionState: AuctionStateService,
+    public lotUserActivityService: LotUserActivityService,
     private auctionEventService: AuctionEventService,
-    private lotService: LotService,
+    private auctionLifecycleService: AuctionLifecycleService,
+    private lotManagementService: LotManagementService,
+    private biddingOrchestrationService: BiddingOrchestrationService,
+    private dialogService: DialogService,
+    private messagingService: MessagingService,
     private toastr: ToastrService,
     private keyboardShortcutService: KeyboardShortcutService
   ) {}
@@ -102,26 +112,26 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isSettingsPanelOpen = false;
   }
   
-  // Header event handlers
+  // Header event handlers - delegate to AuctionLifecycleService
   startAuction(): void {
-    this.auctionEventService.startAuction();
+    this.auctionLifecycleService.startAuction();
   }
   
   endAuction(): void {
-    this.auctionEventService.endAuction();
+    this.auctionLifecycleService.endAuction();
   }
   
   toggleView(): void {
-    this.auctionEventService.toggleView();
+    this.auctionLifecycleService.toggleView();
   }
   
   toggleSimulatedBidding(): void {
-    this.auctionEventService.toggleSimulatedBidding();
+    this.auctionLifecycleService.toggleSimulatedBidding();
   }
   
-  // Lot management
+  // Lot management - delegate to AuctionLifecycleService
   onLotUpdated(update: {lotNumber: number, field: string, value: number}): void {
-    this.auctionEventService.onLotUpdated(update);
+    this.auctionLifecycleService.onLotUpdated(update);
   }
 
   onLotsReordered(reorderedLots: LotDetails[]): void {
@@ -130,96 +140,96 @@ export class AppComponent implements OnInit, OnDestroy {
     this.toastr.success('Lot order updated successfully');
   }
   
-  // User list dialog handlers
+  // User list dialog handlers - delegate to DialogService
   openViewersDialog(): void {
-    this.auctionEventService.openViewersDialog();
+    this.dialogService.openViewersDialog();
   }
   
   closeViewersDialog(): void {
-    this.auctionEventService.closeViewersDialog();
+    this.dialogService.closeViewersDialog();
   }
   
   openWatchersDialog(): void {
-    this.auctionEventService.openWatchersDialog();
+    this.dialogService.openWatchersDialog();
   }
   
   closeWatchersDialog(): void {
-    this.auctionEventService.closeWatchersDialog();
+    this.dialogService.closeWatchersDialog();
   }
   
   openLeadsDialog(): void {
-    this.auctionEventService.openLeadsDialog();
+    this.dialogService.openLeadsDialog();
   }
   
   closeLeadsDialog(): void {
-    this.auctionEventService.closeLeadsDialog();
+    this.dialogService.closeLeadsDialog();
   }
   
   openOnlineDialog(): void {
-    this.auctionEventService.openOnlineDialog();
+    this.dialogService.openOnlineDialog();
   }
   
   closeOnlineDialog(): void {
-    this.auctionEventService.closeOnlineDialog();
+    this.dialogService.closeOnlineDialog();
   }
   
-  // Lot control
+  // Lot control - delegate to LotManagementService
   startLot(): void {
-    this.auctionEventService.startLot();
+    this.lotManagementService.startLot();
   }
   
   moveLot(): void {
-    this.auctionEventService.moveLot();
+    this.lotManagementService.moveLot();
   }
   
   noSale(): void {
-    this.auctionEventService.noSale();
+    this.lotManagementService.noSale();
   }
   
   withdrawLot(): void {
-    this.auctionEventService.withdrawLot();
+    this.lotManagementService.withdrawLot();
   }
   
   markAsSold(): void {
-    this.auctionEventService.markAsSold();
+    this.lotManagementService.markAsSold();
   }
   
   progressHammerState(): void {
-    this.auctionEventService.progressHammerState();
+    this.lotManagementService.progressHammerState();
   }
   
-  // Bidding handlers
+  // Bidding handlers - delegate to BiddingOrchestrationService and LotManagementService
   getLotPerformance() {
-    return this.auctionEventService.getLotPerformance();
+    return this.lotManagementService.getLotPerformance();
   }
   
   setAskingPrice(newPrice: number): void {
-    this.auctionEventService.setAskingPrice(newPrice);
+    this.biddingOrchestrationService.setAskingPrice(newPrice);
   }
   
   adjustBidIncrement(amount: number): void {
-    this.auctionEventService.adjustBidIncrement(amount);
+    this.biddingOrchestrationService.adjustBidIncrement(amount);
   }
   
   onBidPlaced(bid: any): void {
-    this.auctionEventService.onBidPlaced(bid);
+    this.biddingOrchestrationService.onBidPlaced(bid);
   }
   
   onAuctioneerBidCountChanged(): void {
-    this.auctionEventService.onAuctioneerBidCountChanged();
+    this.biddingOrchestrationService.onAuctioneerBidCountChanged();
   }
   
-  // Lot selection
+  // Lot selection - delegate to LotManagementService
   selectLot(lot: any): void {
-    this.auctionEventService.selectLot(lot);
+    this.lotManagementService.selectLot(lot);
   }
   
-  // Dealer messaging
+  // Dealer messaging - delegate to MessagingService
   onDealerSelect(dealer: any): void {
-    this.auctionEventService.onDealerSelect(dealer);
+    this.messagingService.onDealerSelect(dealer);
   }
   
   onSendMessage(message: { text: string, isGlobal: boolean }): void {
-    this.auctionEventService.onSendMessage(message);
+    this.messagingService.onSendMessage(message);
   }
 }

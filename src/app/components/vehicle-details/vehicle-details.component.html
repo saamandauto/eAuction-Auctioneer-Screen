@@ -15,8 +15,8 @@
     <div class="detail-value" [title]="'Color: ' + lot?.color">
       {{ lot?.color }}
     </div>
-    <div class="detail-value" [title]="'Mileage: ' + lot?.mileage + ' km'">
-      {{ lot?.mileage }} km
+    <div class="detail-value" [title]="'Mileage: ' + localizationService.formatMileage(lot?.mileage)">
+      {{ localizationService.formatMileage(lot?.mileage) }}
     </div>
     <div class="detail-value" [title]="'Location: ' + lot?.location">
       {{ lot?.location }}
@@ -26,19 +26,19 @@
     </div>
   </div>
   <div class="vehicle-stats">
-    <div class="stat-item" (click)="openViewersDialog()" [title]="'Viewers: Dealers who have viewed the detail page of this lot'">
+    <div class="stat-item" (click)="openViewersDialog()" [title]="localizationService.getText('components', 'vehicle-details', 'viewersTooltip', 'Viewers: Dealers who have viewed the detail page of this lot')">
       <i class="ri-eye-line"></i>
       <span>{{ lot?.viewers }}</span>
     </div>
-    <div class="stat-item" (click)="openWatchersDialog()" [title]="'Watchers: Dealers who have marked this lot as a favorite'">
+    <div class="stat-item" (click)="openWatchersDialog()" [title]="localizationService.getText('components', 'vehicle-details', 'watchersTooltip', 'Watchers: Dealers who have marked this lot as a favorite')">
       <i class="ri-star-line"></i>
       <span>{{ lot?.watchers }}</span>
     </div>
-    <div class="stat-item" (click)="openLeadsDialog()" [title]="'Leads: Dealers who have expressed interest in this lot and are on the lead list'">
+    <div class="stat-item" (click)="openLeadsDialog()" [title]="localizationService.getText('components', 'vehicle-details', 'leadsTooltip', 'Leads: Dealers who are on the lead list')">
       <i class="ri-list-check-2"></i>
       <span>{{ lot?.leadListUsers }}</span>
     </div>
-    <div class="stat-item" (click)="onOnlineClick()" [title]="'Online Users: Dealers who are currently online and viewing this lot'">
+    <div class="stat-item" (click)="onOnlineClick()" [title]="localizationService.getText('components', 'vehicle-details', 'onlineUsersTooltip', 'Online Users: Dealers who are currently online and viewing this lot')">
       <i class="ri-user-line"></i>
       <span>{{ lot?.onlineUsers }}</span>
     </div>

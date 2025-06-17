@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Bid } from '../../models/interfaces';
+import { LocalizationService } from '../../services/localization.service';
 
 @Component({
   selector: 'app-bid-history',
@@ -12,6 +13,8 @@ import { Bid } from '../../models/interfaces';
 export class BidHistoryComponent {
   @Input() bids: Bid[] = [];
   expanded = false;
+
+  constructor(public localizationService: LocalizationService) {}
 
   get displayedBids(): Bid[] {
     return this.expanded ? this.bids : this.bids.slice(0, 10);

@@ -188,7 +188,7 @@ export class LotControlsComponent {
     this.withdrawCountdownActive = false;
   }
 
-  executeWithdrawal() {
+  private executeWithdrawal() {
     this.cancelWithdrawalCountdown(); // Clean up timers
     this.withdrawLot.emit();
   }

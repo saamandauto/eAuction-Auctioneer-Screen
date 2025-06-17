@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../environments/environment';
 import { SupabaseService } from './supabase.service';
+import { LocalizationService } from './localization.service';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +25,8 @@ export class VoiceService {
 
   constructor(
     private toastr: ToastrService,
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
+    private localizationService: LocalizationService
   ) {
     // Initialize AudioContext when service is created
     try {
@@ -36,6 +38,10 @@ export class VoiceService {
 
   // Helper function to format prices for speech
   public formatPriceForSpeech(price: number): string {
+    const currentCurrency = this.localizationService.getCurrentCurrencyValue();
+    const currency = this.localizationService.availableCurrencies.find(curr => curr.code === currentCurrency);
+    const currencyName = currency ? currency.name.toLowerCase() : 'pounds';
+    
     if (price >= 1000000) {
       const millions = Math.floor(price / 1000000);
       const thousands = Math.floor((price % 1000000) / 1000);
@@ -48,20 +54,20 @@ export class VoiceService {
       if (remainder > 0) {
         result += ` ${remainder}`;
       }
-      return result + ' pounds';
+      return result + ` ${currencyName}`;
     } 
     else if (price >= 1000) {
       const thousands = Math.floor(price / 1000);
       const remainder = price % 1000;
       
       if (remainder === 0) {
-        return `${thousands} thousand pounds`;
+        return `${thousands} thousand ${currencyName}`;
       } else {
-        return `${thousands} thousand ${remainder} pounds`;
+        return `${thousands} thousand ${remainder} ${currencyName}`;
       }
     } 
     else {
-      return `${price} pounds`;
+      return `${price} ${currencyName}`;
     }
   }
 
@@ -148,9 +154,17 @@ export class VoiceService {
 
   // Helper to convert price text for better speech synthesis
   private processPriceTextForSpeech(text: string): string {
+    // Get current currency symbol
+    const currentCurrency = this.localizationService.getCurrentCurrencyValue();
+    const currency = this.localizationService.availableCurrencies.find(curr => curr.code === currentCurrency);
+    const currencySymbol = currency ? currency.symbol : '£';
+    
+    // Create regex pattern for the current currency symbol
+    const escapedSymbol = currencySymbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pricePattern = new RegExp(`${escapedSymbol}(\\d{1,3}(,\\d{3})*|\\d+)`, 'g');
+    
     // Replace price patterns with speech-friendly versions
-    // Pattern for £X,XXX or £XX,XXX etc.
-    return text.replace(/£(\d{1,3}(,\d{3})*|\d+)/g, (match, priceStr) => {
+    return text.replace(pricePattern, (match, priceStr) => {
       // Remove commas to get the numeric value
       const price = parseInt(priceStr.replace(/,/g, ''));
       if (!isNaN(price)) {

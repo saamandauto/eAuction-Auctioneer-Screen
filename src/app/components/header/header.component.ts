@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { VoiceService } from '../../services/voice.service';
 import { SpeechRecognitionService } from '../../services/speech-recognition.service';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
+import { LocalizationService } from '../../services/localization.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -15,6 +16,9 @@ import { Subscription } from 'rxjs';
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() auctionTitle = '';
+  @Input() auctionId = '';
+  @Input() auctionDate = '';
+  @Input() auctionCompany = '';
   @Input() currentDateTime: string = '';
   @Input() isAuctionStarted: boolean = false;
   @Input() isViewingLots: boolean = true;
@@ -44,7 +48,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   constructor(
     private voiceService: VoiceService,
     private speechRecognitionService: SpeechRecognitionService,
-    private keyboardShortcutService: KeyboardShortcutService
+    private keyboardShortcutService: KeyboardShortcutService,
+    public localizationService: LocalizationService
   ) {}
 
   ngOnInit() {

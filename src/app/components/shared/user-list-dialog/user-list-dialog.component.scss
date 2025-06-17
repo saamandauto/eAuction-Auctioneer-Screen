@@ -99,12 +99,14 @@
   color: #495057;
   border-bottom: 2px solid #dee2e6;
   white-space: nowrap;
+  font-size: 0.85rem; /* Reduced font size for headers */
 }
 
 .viewers-table td {
   padding: 0.75rem;
   vertical-align: middle;
   border-bottom: 1px solid #dee2e6;
+  font-size: 0.85rem; /* Reduced font size for cells */
 }
 
 .empty-row td {

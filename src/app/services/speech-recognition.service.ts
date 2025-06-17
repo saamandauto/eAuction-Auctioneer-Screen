@@ -127,7 +127,6 @@ export class SpeechRecognitionService {
             this.retryTimeout = null;
           }
           
-          // Removed the call to non-existent method updateWithdrawCountdown
           // The recognition restart is already handled by the onend handler
         } else if (event.error === 'audio-capture') {
           this.toastr.error('No microphone was found or microphone is disabled.');

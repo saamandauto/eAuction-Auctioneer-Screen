@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotDetails, Bid } from '../../models/interfaces';
 import { LotStatus } from '../../models/enums';
+import { LocalizationService } from '../../services/localization.service';
 
 @Component({
   selector: 'app-lot-result-dialog',
@@ -16,6 +17,8 @@ export class LotResultDialogComponent {
   @Input() onClose: () => void = () => {};
 
   LotStatus = LotStatus; // Make enum available in template
+
+  constructor(public localizationService: LocalizationService) {}
 
   get finalState() {
     return this.lot?.finalState;
@@ -53,7 +56,7 @@ ID: ${bid.bidderId}
     if (this.bids.length === 0) {
       return 'No bids';
     }
-    return `£${this.bids[0].amount.toLocaleString()}`;
+    return this.localizationService.formatPrice(this.bids[0].amount);
   }
 
   // Get CSS class based on status

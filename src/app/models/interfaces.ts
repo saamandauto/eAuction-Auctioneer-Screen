@@ -167,3 +167,15 @@ export interface Bid {
   city?: string;
   country?: string;
 }
+
+// New interface for auction data
+export interface AuctionData {
+  id: string;
+  auctionTitle: string;
+  auctionId: string;
+  auctionDate: string;
+  auctionCompany: string;
+  defaultLocale: string;
+  defaultCurrency: string;
+  createdAt: string;
+}

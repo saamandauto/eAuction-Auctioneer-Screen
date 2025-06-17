@@ -21,7 +21,7 @@
               {{ bid.bidder }}
             </span>
           </td>
-          <td>£{{ bid.amount }}</td>
+          <td>{{ localizationService.formatPrice(bid.amount) }}</td>
           <td>{{ bid.time }}</td>
         </tr>
         <tr *ngIf="displayedBids.length === 0" class="empty-row">

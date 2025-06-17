@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotDetails } from '../../models/interfaces';
+import { LocalizationService } from '../../services/localization.service';
 
 @Component({
   selector: 'app-current-status',
@@ -15,6 +16,8 @@ export class CurrentStatusComponent {
   @Input() askingPrice = 0;
   @Input() startPrice = 0;
   @Input() lotPerformance = { value: 0, text: '-' };
+
+  constructor(public localizationService: LocalizationService) {}
 
   get isAboveReserve(): boolean {
     return !!this.currentHighestBid && 

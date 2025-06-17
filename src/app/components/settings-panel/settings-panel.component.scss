@@ -53,6 +53,7 @@
   position: sticky;
   top: 55px;
   z-index: 9;
+  overflow-x: auto;
 }
 
 .tab-button {
@@ -64,6 +65,8 @@
   color: #495057;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .tab-button.active {
@@ -222,4 +225,130 @@ input:checked + .slider:before {
 .shortcut-description {
   font-size: 0.9rem;
   color: #495057;
+}
+
+/* Localization Tab Styles */
+.localization-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.localization-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.localization-section h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.help-text {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.localization-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dropdown-select {
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dropdown-select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.dropdown-select:hover {
+  border-color: #adb5bd;
+}
+
+/* Data Management Tab Styles */
+.data-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.data-management-container h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.data-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.action-description {
+  flex: 1;
+}
+
+.action-description h5 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  color: #212529;
+}
+
+.action-description p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.data-action-item button {
+  min-width: 120px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .dialog {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .dialog-tabs {
+    overflow-x: auto;
+  }
+  
+  .tab-button {
+    min-width: 120px;
+    font-size: 0.85rem;
+  }
+  
+  .localization-container {
+    gap: 1.5rem;
+  }
+  
+  .data-action-item {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .data-action-item button {
+    width: 100%;
+  }
 }

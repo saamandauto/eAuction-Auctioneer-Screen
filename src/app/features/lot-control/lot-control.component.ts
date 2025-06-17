@@ -1,9 +1,10 @@
-import { Component, Input, Output, EventEmitter, ViewChild, AfterViewInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotControlsComponent } from '../../components/lot-controls/lot-controls.component';
 import { LotStatus, HammerState } from '../../models/enums';
 import { LotDetails, Bid } from '../../models/interfaces';
 import { AuctionStateService } from '../../auction/auction-state.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-lot-control',
@@ -15,7 +16,7 @@ import { AuctionStateService } from '../../auction/auction-state.service';
   templateUrl: './lot-control.component.html',
   styleUrls: ['./lot-control.component.scss']
 })
-export class LotControlComponent implements AfterViewInit, OnDestroy, OnChanges {
+export class LotControlComponent implements OnInit, OnDestroy {
   @ViewChild(LotControlsComponent) lotControlsComponent!: LotControlsComponent;
   
   @Input() lotStatus: LotStatus = LotStatus.PENDING;
@@ -35,32 +36,57 @@ export class LotControlComponent implements AfterViewInit, OnDestroy, OnChanges 
   @Output() markAsSold = new EventEmitter<void>();
   @Output() progressHammerState = new EventEmitter<void>();
 
+  private subscriptions: Subscription[] = [];
+
   constructor(private auctionState: AuctionStateService) {}
 
-  ngAfterViewInit() {
-    // Register the component with the auction state service
-    this.auctionState.setLotControlComponent(this.lotControlsComponent);
+  ngOnInit() {
+    // Subscribe to bids changes to reset hammer sequence when new bids arrive
+    this.subscriptions.push(
+      this.auctionState.getBids().subscribe(() => {
+        this.handleNewBid();
+      })
+    );
+
+    // Subscribe to hammer state changes to reset hammer sequence when needed
+    this.subscriptions.push(
+      this.auctionState.getHammerState().subscribe(state => {
+        // If hammer state was reset to ACCEPTING_BIDS, reset the sequence
+        if (state === HammerState.ACCEPTING_BIDS) {
+          this.resetHammerSequence();
+        }
+      })
+    );
   }
-  
-  ngOnChanges(changes: SimpleChanges) {
-    // Monitor changes to hammer state and reset accordingly
-    if (changes['hammerState'] && !changes['hammerState'].firstChange) {
-      const previousState = changes['hammerState'].previousValue;
-      const currentState = changes['hammerState'].currentValue;
-      
-      // If we went from a hammer sequence back to accepting bids, reset the component
-      if (previousState !== HammerState.ACCEPTING_BIDS && 
-          currentState === HammerState.ACCEPTING_BIDS && 
-          this.lotControlsComponent) {
+
+  ngOnDestroy() {
+    // Clean up all subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions = [];
+  }
+
+  /**
+   * Handle a new bid by resetting hammer sequence and canceling withdraw countdown
+   */
+  private handleNewBid(): void {
+    // We need to wait for the ViewChild to be initialized, which happens after ngOnInit
+    setTimeout(() => {
+      if (this.lotControlsComponent) {
+        this.lotControlsComponent.resetHammerSequence();
+        this.lotControlsComponent.cancelWithdrawalCountdown();
+      }
+    });
+  }
+
+  /**
+   * Reset the hammer sequence in the child component
+   */
+  private resetHammerSequence(): void {
+    setTimeout(() => {
+      if (this.lotControlsComponent) {
         this.lotControlsComponent.resetHammerSequence();
       }
-    }
-  }
-  
-  ngOnDestroy() {
-    // Clear the reference when component is destroyed
-    // We're passing undefined instead of null to avoid type error
-    this.auctionState.setLotControlComponent(undefined);
+    });
   }
 
   onStartLot() {

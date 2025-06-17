@@ -50,8 +50,8 @@
 .bid-increment-group {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .bid-increment-group label {
@@ -59,12 +59,13 @@
   color: #495057;
   font-weight: 500;
   margin: 0;
+  white-space: nowrap;
 }
 
 .increment-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   background: transparent;
   padding: 0;
   border: none;
@@ -74,6 +75,8 @@
   background-color: #ff5722;
   color: white;
   border: none;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .increment-controls .button-icon:hover {
@@ -82,7 +85,7 @@
 }
 
 .increment-controls span {
-  min-width: 80px;
+  min-width: 60px;
   text-align: center;
 }
 
@@ -114,7 +117,7 @@ button {
   }
   
   .increment-controls span {
-    min-width: 60px;
+    min-width: 50px;
   }
   
   .bid-controls {
@@ -123,6 +126,15 @@ button {
   
   .quick-bid-controls {
     gap: 0.5rem;
+  }
+  
+  .bid-increment-group {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+  
+  .bid-increment-group label {
+    font-size: 0.85rem;
   }
 }
 
@@ -135,5 +147,42 @@ button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  
+  .bid-increment-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+  
+  .increment-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .increment-controls span {
+    min-width: 50px;
+  }
+  
+  .increment-controls .button-icon {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+  }
+}
+
+/* Additional responsive fixes for very small screens */
+@media (max-width: 768px) {
+  .input-with-button {
+    flex-direction: column;
+  }
+  
+  .input-with-button input,
+  .input-with-button button {
+    width: 100%;
+  }
+  
+  .quick-bid-controls {
+    grid-template-columns: 1fr;
   }
 }

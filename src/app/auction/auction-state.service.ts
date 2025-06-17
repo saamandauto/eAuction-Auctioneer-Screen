@@ -1,18 +1,13 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, from, catchError, of, tap, map, switchMap } from 'rxjs';
-import { Bid, Dealer, LotDetails, Message, ViewerInfo } from '../models/interfaces';
+import { BehaviorSubject, Observable, from, catchError, of, tap, map, combineLatest } from 'rxjs';
+import { Bid, Dealer, LotDetails, Message } from '../models/interfaces';
 import { LotStatus, HammerState } from '../models/enums';
-import { INITIAL_MESSAGES } from '../data/mock-messages';
-import { AUCTION_TITLE } from '../data/mock-data';
-import { MOCK_VIEWERS, updateMockViewers } from '../data/mock-viewers';
-import { MOCK_WATCHERS, updateMockWatchers } from '../data/mock-watchers';
-import { MOCK_LEADS, updateMockLeads } from '../data/mock-leads';
-import { MOCK_ONLINE, updateMockOnline } from '../data/mock-online';
-import { updateDealerStatuses } from '../data/mock-dealer-status';
 import { DealerService } from '../services/dealer.service';
 import { LotService } from '../services/lot.service';
 import { LotControlsComponent } from '../components/lot-controls/lot-controls.component';
 import { AuctionState, AuctionStateKey } from '../models/state.interface';
+import { AuctionDataService } from '../services/auction-data.service';
+import { LotUserActivityService } from '../services/lot-user-activity.service';
 
 @Injectable({
   providedIn: 'root'
@@ -22,27 +17,25 @@ export class AuctionStateService {
   private lotControlComponent: LotControlsComponent | null = null;
   
   // Auction meta info
-  private auctionTitle = AUCTION_TITLE;
+  private auctionTitle$ = new BehaviorSubject<string>('');
   private currentDateTime$ = new BehaviorSubject<string>(new Date().toLocaleString('en-GB'));
+  private auctionId$ = new BehaviorSubject<string>('');
+  private auctionDate$ = new BehaviorSubject<string>('');
+  private auctionCompany$ = new BehaviorSubject<string>('');
   
   // Auction state
   private isAuctionStarted$ = new BehaviorSubject<boolean>(false);
   private isViewingLots$ = new BehaviorSubject<boolean>(true);
   private simulatedBiddingEnabled$ = new BehaviorSubject<boolean>(false);
   private skipConfirmations$ = new BehaviorSubject<boolean>(false);
+  private hammerRequiresReserveMet$ = new BehaviorSubject<boolean>(false);
 
   // Lots and dealers
   private currentLot$ = new BehaviorSubject<LotDetails | null>(null);
   private lots$ = new BehaviorSubject<LotDetails[]>([]);
   private dealers$ = new BehaviorSubject<Dealer[]>([]);
-  private messages$ = new BehaviorSubject<Message[]>(INITIAL_MESSAGES);
+  private messages$ = new BehaviorSubject<Message[]>([]);
   private bids$ = new BehaviorSubject<Bid[]>([]);
-
-  // User info
-  private viewers$ = new BehaviorSubject<ViewerInfo[]>([]);
-  private watchers$ = new BehaviorSubject<ViewerInfo[]>([]);
-  private leads$ = new BehaviorSubject<ViewerInfo[]>([]);
-  private onlineUsers$ = new BehaviorSubject<ViewerInfo[]>([]);
   
   // Dialog states
   private isViewersDialogOpen$ = new BehaviorSubject<boolean>(false);
@@ -64,14 +57,6 @@ export class AuctionStateService {
   private newBidAmount$ = new BehaviorSubject<number>(0);
   private highestBid$ = new BehaviorSubject<Bid | null>(null);
 
-  // Auction stats
-  private soldLots$ = new BehaviorSubject<number>(0);
-  private withdrawnLots$ = new BehaviorSubject<number>(0);
-  private totalSoldValue$ = new BehaviorSubject<number>(0);
-  private totalReserveValue$ = new BehaviorSubject<number>(0);
-  private auctioneerBidsCount$ = new BehaviorSubject<number>(0);
-  private dealerBidsCount$ = new BehaviorSubject<number>(0);
-
   // Selected dealer
   private selectedDealer$ = new BehaviorSubject<Dealer | null>(null);
 
@@ -80,10 +65,15 @@ export class AuctionStateService {
 
   constructor(
     private dealerService: DealerService,
-    private lotService: LotService
+    private lotService: LotService,
+    private auctionDataService: AuctionDataService,
+    private lotUserActivityService: LotUserActivityService
   ) {
     // Initialize the state subjects mapping
     this.initStateSubjects();
+    
+    // Load auction data
+    this.loadAuctionData();
     
     // Load dealers first
     this.loadDealers().subscribe(dealers => {
@@ -95,26 +85,37 @@ export class AuctionStateService {
     setInterval(() => {
       this.currentDateTime$.next(new Date().toLocaleString('en-GB'));
     }, 1000);
+    
+    // Set up listener for bid and current lot changes to update canUseHammer status
+    combineLatest([
+      this.currentHighestBid$,
+      this.currentLot$,
+      this.lotStatus$,
+      this.bids$,
+      this.hammerRequiresReserveMet$
+    ]).subscribe(() => {
+      this.updateCanUseHammer();
+    });
   }
   
   // Initialize the mapping between state keys and BehaviorSubjects
   private initStateSubjects(): void {
     this.stateSubjects = {
-      auctionTitle: new BehaviorSubject<string>(this.auctionTitle),
+      auctionTitle: this.auctionTitle$,
       currentDateTime: this.currentDateTime$,
+      auctionId: this.auctionId$,
+      auctionDate: this.auctionDate$,
+      auctionCompany: this.auctionCompany$,
       isAuctionStarted: this.isAuctionStarted$,
       isViewingLots: this.isViewingLots$,
       simulatedBiddingEnabled: this.simulatedBiddingEnabled$,
       skipConfirmations: this.skipConfirmations$,
+      hammerRequiresReserveMet: this.hammerRequiresReserveMet$,
       currentLot: this.currentLot$,
       lots: this.lots$,
       dealers: this.dealers$,
       messages: this.messages$,
       bids: this.bids$,
-      viewers: this.viewers$,
-      watchers: this.watchers$,
-      leads: this.leads$,
-      onlineUsers: this.onlineUsers$,
       isViewersDialogOpen: this.isViewersDialogOpen$,
       isWatchersDialogOpen: this.isWatchersDialogOpen$,
       isLeadsDialogOpen: this.isLeadsDialogOpen$,
@@ -129,12 +130,6 @@ export class AuctionStateService {
       bidIncrement: this.bidIncrement$,
       newBidAmount: this.newBidAmount$,
       highestBid: this.highestBid$,
-      soldLots: this.soldLots$,
-      withdrawnLots: this.withdrawnLots$,
-      totalSoldValue: this.totalSoldValue$,
-      totalReserveValue: this.totalReserveValue$,
-      auctioneerBidsCount: this.auctioneerBidsCount$,
-      dealerBidsCount: this.dealerBidsCount$,
       selectedDealer: this.selectedDealer$
     };
   }
@@ -147,6 +142,16 @@ export class AuctionStateService {
   // Get reference to lot control component
   getLotControlComponent(): LotControlsComponent | null {
     return this.lotControlComponent;
+  }
+
+  // Load auction data from the service
+  private loadAuctionData(): void {
+    this.auctionDataService.getAuctionData().subscribe(auction => {
+      this.auctionTitle$.next(auction.auctionTitle);
+      this.auctionId$.next(auction.auctionId);
+      this.auctionDate$.next(auction.auctionDate);
+      this.auctionCompany$.next(auction.auctionCompany);
+    });
   }
 
   // Private method to load dealers
@@ -177,23 +182,15 @@ export class AuctionStateService {
   private processLoadedLots(lots: LotDetails[]): void {
     this.lots$.next(lots);
     
-    // Initialize mock data based on loaded lots
-    updateMockViewers(lots, this.dealers$.value);
-    updateMockWatchers(lots, this.dealers$.value);
-    updateMockLeads(lots, this.dealers$.value);
-    updateMockOnline(lots, this.dealers$.value);
-    updateDealerStatuses(this.currentLot$.value?.lotNumber || 1, this.dealers$.value);
-    
     // Initialize currentLot
     if (lots.length > 0) {
       const initialLot = lots[0];
       this.currentLot$.next(initialLot);
       this.startPrice$.next(initialLot.initialAskingPrice);
       this.askingPrice$.next(initialLot.initialAskingPrice);
-      this.updateViewers();
-      this.updateWatchers();
-      this.updateLeads();
-      this.updateOnlineUsers();
+      
+      // Load user activity data for the initial lot
+      this.lotUserActivityService.loadActivityForCurrentLot(initialLot.lotNumber, this.dealers$.value);
     }
   }
 
@@ -205,12 +202,7 @@ export class AuctionStateService {
     }
     
     // Fallback to specific getters for any keys not in the mapping
-    switch(key) {
-      case 'auctionTitle':
-        return this.auctionTitle as AuctionState[K];
-      default:
-        return null as unknown as AuctionState[K];
-    }
+    return null as unknown as AuctionState[K];
   }
 
   // Type-safe method to get an observable of a specific state value
@@ -234,19 +226,50 @@ export class AuctionStateService {
         
         // Special case for currentLot - update related data
         if (key === 'currentLot' && updates[key]) {
-          this.updateViewers();
-          this.updateWatchers();
-          this.updateLeads();
-          this.updateOnlineUsers();
+          const lot = updates[key] as LotDetails;
+          if (lot && lot.lotNumber) {
+            // Load user activity data for the new lot
+            this.lotUserActivityService.loadActivityForCurrentLot(lot.lotNumber, this.dealers$.value);
+          }
+        }
+        
+        // If we updated hammerRequiresReserveMet, recalculate canUseHammer
+        if (key === 'hammerRequiresReserveMet') {
+          this.updateCanUseHammer();
         }
       }
     });
+  }
+  
+  // Update the canUseHammer status based on various conditions
+  public updateCanUseHammer(): void {
+    const lotStatus = this.lotStatus$.value;
+    const hasBids = this.bids$.value.length > 0;
+    const hammerRequiresReserveMet = this.hammerRequiresReserveMet$.value;
+    const currentHighestBid = this.currentHighestBid$.value;
+    const currentLot = this.currentLot$.value;
+    
+    let canUseHammer = false;
+    
+    if (lotStatus === LotStatus.ACTIVE && hasBids) {
+      if (!hammerRequiresReserveMet) {
+        // If hammer doesn't require reserve to be met, allow using hammer
+        canUseHammer = true;
+      } else {
+        // If hammer requires reserve to be met, check if the current bid meets it
+        canUseHammer = !!currentHighestBid && 
+                       !!currentLot && 
+                       currentHighestBid >= currentLot.reservePrice;
+      }
+    }
+    
+    this.canUseHammer$.next(canUseHammer);
   }
 
   // All the other methods remain the same, just keeping them for backward compatibility
   
   getAuctionTitle(): string {
-    return this.auctionTitle;
+    return this.auctionTitle$.value;
   }
 
   getCurrentDateTime(): Observable<string> {
@@ -283,6 +306,14 @@ export class AuctionStateService {
   
   getSkipConfirmationsObservable(): Observable<boolean> {
     return this.skipConfirmations$.asObservable();
+  }
+  
+  getHammerRequiresReserveMet(): boolean {
+    return this.hammerRequiresReserveMet$.value;
+  }
+  
+  getHammerRequiresReserveMetObservable(): Observable<boolean> {
+    return this.hammerRequiresReserveMet$.asObservable();
   }
 
   getCurrentLot(): Observable<LotDetails | null> {
@@ -331,22 +362,6 @@ export class AuctionStateService {
 
   getHighestBidValue(): Bid | null {
     return this.highestBid$.value;
-  }
-
-  getViewers(): Observable<ViewerInfo[]> {
-    return this.viewers$.asObservable();
-  }
-
-  getWatchers(): Observable<ViewerInfo[]> {
-    return this.watchers$.asObservable();
-  }
-
-  getLeads(): Observable<ViewerInfo[]> {
-    return this.leads$.asObservable();
-  }
-
-  getOnlineUsers(): Observable<ViewerInfo[]> {
-    return this.onlineUsers$.asObservable();
   }
 
   getIsViewersDialogOpen(): Observable<boolean> {
@@ -429,46 +444,6 @@ export class AuctionStateService {
     return this.newBidAmount$.value;
   }
 
-  getSoldLots(): Observable<number> {
-    return this.soldLots$.asObservable();
-  }
-
-  getSoldLotsValue(): number {
-    return this.soldLots$.value;
-  }
-
-  getWithdrawnLots(): Observable<number> {
-    return this.withdrawnLots$.asObservable();
-  }
-
-  getWithdrawnLotsValue(): number {
-    return this.withdrawnLots$.value;
-  }
-
-  getTotalSoldValue(): Observable<number> {
-    return this.totalSoldValue$.asObservable();
-  }
-
-  getTotalSoldValueValue(): number {
-    return this.totalSoldValue$.value;
-  }
-
-  getTotalReserveValue(): Observable<number> {
-    return this.totalReserveValue$.asObservable();
-  }
-
-  getTotalReserveValueValue(): number {
-    return this.totalReserveValue$.value;
-  }
-
-  getAuctioneerBidsCount(): Observable<number> {
-    return this.auctioneerBidsCount$.asObservable();
-  }
-
-  getDealerBidsCount(): Observable<number> {
-    return this.dealerBidsCount$.asObservable();
-  }
-
   getSelectedDealer(): Observable<Dealer | null> {
     return this.selectedDealer$.asObservable();
   }
@@ -488,30 +463,22 @@ export class AuctionStateService {
 
   setSimulatedBiddingEnabled(value: boolean): void {
     this.simulatedBiddingEnabled$.next(value);
-    
-    // Trigger the bidding service to reflect this change
-    if (this.simulatedBiddingEnabled$.value && 
-        this.lotStatus$.value === LotStatus.ACTIVE && 
-        this.currentLot$.value) {
-      // Note: The actual simulation start happens in the auction-event.service
-      // which should be listening to this state change
-    } else if (!this.simulatedBiddingEnabled$.value) {
-      // Note: The actual simulation stop happens in the auction-event.service
-      // which should be listening to this state change
-    }
   }
 
   setSkipConfirmations(value: boolean): void {
     this.skipConfirmations$.next(value);
   }
+  
+  setHammerRequiresReserveMet(value: boolean): void {
+    this.hammerRequiresReserveMet$.next(value);
+    this.updateCanUseHammer();
+  }
 
   setCurrentLot(lot: LotDetails | null): void {
     this.currentLot$.next(lot);
     if (lot) {
-      this.updateViewers();
-      this.updateWatchers();
-      this.updateLeads();
-      this.updateOnlineUsers();
+      // Load user activity for the new lot
+      this.lotUserActivityService.loadActivityForCurrentLot(lot.lotNumber, this.dealers$.value);
     }
   }
 
@@ -541,11 +508,13 @@ export class AuctionStateService {
   setLots(lots: LotDetails[]): void {
     this.lots$.next(lots);
     
-    // Update related data after reordering
-    updateMockViewers(lots, this.dealers$.value);
-    updateMockWatchers(lots, this.dealers$.value);
-    updateMockLeads(lots, this.dealers$.value);
-    updateMockOnline(lots, this.dealers$.value);
+    // Update user activity for current lot if it exists
+    if (this.currentLot$.value) {
+      this.lotUserActivityService.loadActivityForCurrentLot(
+        this.currentLot$.value.lotNumber,
+        this.dealers$.value
+      );
+    }
   }
 
   setLotStatus(status: LotStatus): void {
@@ -589,49 +558,8 @@ export class AuctionStateService {
     this.newBidAmount$.next(value);
   }
 
-  incrementSoldLots(): void {
-    const newValue = this.soldLots$.value + 1;
-    this.soldLots$.next(newValue);
-  }
-
-  incrementWithdrawnLots(): void {
-    const newValue = this.withdrawnLots$.value + 1;
-    this.withdrawnLots$.next(newValue);
-  }
-
-  addToTotalSoldValue(value: number): void {
-    const newValue = this.totalSoldValue$.value + value;
-    this.totalSoldValue$.next(newValue);
-  }
-
-  addToTotalReserveValue(value: number): void {
-    const newValue = this.totalReserveValue$.value + value;
-    this.totalReserveValue$.next(newValue);
-  }
-
-  incrementAuctioneerBidsCount(): void {
-    const newValue = this.auctioneerBidsCount$.value + 1;
-    this.auctioneerBidsCount$.next(newValue);
-  }
-
-  incrementDealerBidsCount(): void {
-    const newValue = this.dealerBidsCount$.value + 1;
-    this.dealerBidsCount$.next(newValue);
-  }
-
   setSelectedDealer(dealer: Dealer | null): void {
     this.selectedDealer$.next(dealer);
-    
-    // Mark messages as read
-    if (dealer) {
-      const dealerId = (dealer.USR_ID ? dealer.USR_ID.toString() : '') || 
-                     (dealer.ID ? dealer.ID.toString() : '');
-      
-      const updatedMessages = this.messages$.value.map(msg => 
-        msg.dealerId === dealerId ? { ...msg, isRead: true } : msg
-      );
-      this.messages$.next(updatedMessages);
-    }
   }
 
   addBid(bid: Bid): void {
@@ -639,7 +567,7 @@ export class AuctionStateService {
     this.currentHighestBid$.next(bid.amount);
     this.highestBid$.next(bid);
     this.askingPrice$.next(bid.amount + this.bidIncrement$.value);
-    this.canUseHammer$.next(true);
+    this.updateCanUseHammer();
   }
 
   addMessage(message: Message): void {
@@ -659,30 +587,6 @@ export class AuctionStateService {
     this.newBidAmount$.next(0);
     // Reset bid increment to default 500
     this.bidIncrement$.next(500);
-  }
-
-  private updateViewers(): void {
-    if (this.currentLot$.value) {
-      this.viewers$.next(MOCK_VIEWERS.get(this.currentLot$.value.lotNumber) || []);
-    }
-  }
-
-  private updateWatchers(): void {
-    if (this.currentLot$.value) {
-      this.watchers$.next(MOCK_WATCHERS.get(this.currentLot$.value.lotNumber) || []);
-    }
-  }
-
-  private updateLeads(): void {
-    if (this.currentLot$.value) {
-      this.leads$.next(MOCK_LEADS.get(this.currentLot$.value.lotNumber) || []);
-    }
-  }
-
-  private updateOnlineUsers(): void {
-    if (this.currentLot$.value) {
-      this.onlineUsers$.next(MOCK_ONLINE.get(this.currentLot$.value.lotNumber) || []);
-    }
   }
 
   // Support methods for legacy to new state management transition

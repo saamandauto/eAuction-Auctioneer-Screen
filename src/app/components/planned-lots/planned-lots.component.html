@@ -1,6 +1,6 @@
 <div class="planned-lots-panel">
   <div class="panel-header">
-    <h2>Planned Lots</h2>
+    <h2>{{ localizationService.getText('components', 'planned-lots', 'title', 'Planned Lots') }}</h2>
     <div class="view-controls">
       <button 
         class="view-toggle-button" 
@@ -8,7 +8,7 @@
         [class.active]="isDragEnabled"
         title="Toggle reordering mode">
         <i class="ri-drag-move-line"></i>
-        {{ isDragEnabled ? 'Disable Reordering' : 'Reorder Lots' }}
+        {{ isDragEnabled ? localizationService.getText('components', 'planned-lots', 'disableReordering', 'Disable Reordering') : localizationService.getText('components', 'planned-lots', 'reorderLots', 'Reorder Lots') }}
       </button>
       <button 
         class="view-toggle-button" 
@@ -16,9 +16,9 @@
         title="{{ viewMode === 'compact' ? 'Show all columns' : 'Show essential columns only' }}"
         *ngIf="isToggleVisible">
         <i [class]="viewMode === 'compact' ? 'ri-menu-line' : 'ri-menu-fold-line'"></i>
-        {{ viewMode === 'compact' ? 'Detailed View' : 'Compact View' }}
+        {{ viewMode === 'compact' ? localizationService.getText('components', 'planned-lots', 'detailedView', 'Detailed View') : localizationService.getText('components', 'planned-lots', 'compactView', 'Compact View') }}
       </button>
-      <span class="lot-count">{{ lots.length }} lots</span>
+      <span class="lot-count">{{ lots.length }} {{ localizationService.getText('components', 'planned-lots', 'lotsCountSuffix', 'lots') }}</span>
     </div>
   </div>
   
@@ -31,99 +31,99 @@
            (cdkDropListDropped)="onDrop($event)">
       <thead>
         <tr>
-          <th *ngIf="isDragEnabled" class="drag-header">Reorder</th>
+          <th *ngIf="isDragEnabled" class="drag-header">{{ localizationService.getText('components', 'planned-lots', 'reorderHeader', 'Reorder') }}</th>
           <th (click)="sort('lotNumber')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Lot No.
+            {{ localizationService.getText('components', 'planned-lots', 'lotNo', 'Lot No.') }}
             <span class="sort-icon" *ngIf="sortColumn === 'lotNumber' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('make')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Vehicle
+            {{ localizationService.getText('components', 'planned-lots', 'vehicle', 'Vehicle') }}
             <span class="sort-icon" *ngIf="sortColumn === 'make' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('year')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Year
+            {{ localizationService.getText('components', 'planned-lots', 'year', 'Year') }}
             <span class="sort-icon" *ngIf="sortColumn === 'year' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('transmission')" class="sortable-header toggle-column" [class.disabled-sort]="isDragEnabled">
-            Transmission
+            {{ localizationService.getText('components', 'planned-lots', 'transmission', 'Transmission') }}
             <span class="sort-icon" *ngIf="sortColumn === 'transmission' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('fuel')" class="sortable-header toggle-column" [class.disabled-sort]="isDragEnabled">
-            Fuel
+            {{ localizationService.getText('components', 'planned-lots', 'fuel', 'Fuel') }}
             <span class="sort-icon" *ngIf="sortColumn === 'fuel' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('color')" class="sortable-header toggle-column" [class.disabled-sort]="isDragEnabled">
-            Color
+            {{ localizationService.getText('components', 'planned-lots', 'color', 'Color') }}
             <span class="sort-icon" *ngIf="sortColumn === 'color' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('mileage')" class="sortable-header toggle-column" [class.disabled-sort]="isDragEnabled">
-            Mileage
+            {{ localizationService.getText('components', 'planned-lots', 'mileage', 'Mileage') }}
             <span class="sort-icon" *ngIf="sortColumn === 'mileage' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('location')" class="sortable-header toggle-column" [class.disabled-sort]="isDragEnabled">
-            Location
+            {{ localizationService.getText('components', 'planned-lots', 'location', 'Location') }}
             <span class="sort-icon" *ngIf="sortColumn === 'location' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('registration')" class="sortable-header toggle-column" [class.disabled-sort]="isDragEnabled">
-            Registration
+            {{ localizationService.getText('components', 'planned-lots', 'registration', 'Registration') }}
             <span class="sort-icon" *ngIf="sortColumn === 'registration' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('reservePrice')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Reserve Price
+            {{ localizationService.getText('components', 'planned-lots', 'reservePrice', 'Reserve Price') }}
             <span class="sort-icon" *ngIf="sortColumn === 'reservePrice' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('initialAskingPrice')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Asking Price
+            {{ localizationService.getText('components', 'planned-lots', 'askingPrice', 'Asking Price') }}
             <span class="sort-icon" *ngIf="sortColumn === 'initialAskingPrice' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('lastAuctionBid')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Last Auction
+            {{ localizationService.getText('components', 'planned-lots', 'lastAuction', 'Last Auction') }}
             <span class="sort-icon" *ngIf="sortColumn === 'lastAuctionBid' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
           <th (click)="sort('indicataMarketPrice')" class="sortable-header" [class.disabled-sort]="isDragEnabled">
-            Indicata Price
+            {{ localizationService.getText('components', 'planned-lots', 'indicataPrice', 'Indicata Price') }}
             <span class="sort-icon" *ngIf="sortColumn === 'indicataMarketPrice' && !isDragEnabled">
               <i [class.ri-arrow-up-s-line]="sortDirection === 'asc'" 
                  [class.ri-arrow-down-s-line]="sortDirection === 'desc'"></i>
             </span>
           </th>
-          <th>Dealer Activity</th>
+          <th>{{ localizationService.getText('components', 'planned-lots', 'dealerActivity', 'Dealer Activity') }}</th>
         </tr>
       </thead>
       <tbody cdkDropList (cdkDropListDropped)="onDrop($event)">
@@ -143,12 +143,12 @@
           <td class="toggle-column">{{ lot.transmission }}</td>
           <td class="toggle-column">{{ lot.fuel }}</td>
           <td class="toggle-column">{{ lot.color }}</td>
-          <td class="toggle-column">{{ lot.mileage }} km</td>
+          <td class="toggle-column">{{ localizationService.formatMileage(lot.mileage) }}</td>
           <td class="toggle-column">{{ lot.location }}</td>
           <td class="toggle-column">{{ lot.registration }}</td>
           <td>
             <ng-container *ngIf="!isEditing(lot.lotNumber, 'reservePrice'); else reservePriceEdit">
-              £{{ lot.reservePrice }}
+              {{ localizationService.formatPrice(lot.reservePrice) }}
               <button class="edit-button" (click)="startEdit(lot.lotNumber, 'reservePrice')">
                 <i class="ri-edit-line"></i>
               </button>
@@ -169,7 +169,7 @@
           </td>
           <td>
             <ng-container *ngIf="!isEditing(lot.lotNumber, 'initialAskingPrice'); else initialAskingPriceEdit">
-              £{{ lot.initialAskingPrice }}
+              {{ localizationService.formatPrice(lot.initialAskingPrice) }}
               <button class="edit-button" (click)="startEdit(lot.lotNumber, 'initialAskingPrice')">
                 <i class="ri-edit-line"></i>
               </button>
@@ -188,23 +188,23 @@
               </div>
             </ng-template>
           </td>
-          <td>{{ lot.lastAuctionBid ? '£' + lot.lastAuctionBid : '-' }}</td>
-          <td>{{ lot.indicataMarketPrice ? '£' + lot.indicataMarketPrice : '-' }}</td>
+          <td>{{ localizationService.formatPrice(lot.lastAuctionBid) }}</td>
+          <td>{{ localizationService.formatPrice(lot.indicataMarketPrice) }}</td>
           <td>
             <div class="dealer-activity">
-              <div class="stat-item clickable" *ngIf="lot.viewers > 0" (click)="openViewersDialog(lot)" title="Viewers: Dealers who have viewed the detail page of this lot">
+              <div class="stat-item clickable" *ngIf="lot.viewers > 0" (click)="openViewersDialog(lot)" [title]="localizationService.getText('components', 'planned-lots', 'viewersTooltip', 'Viewers: Dealers who have viewed the detail page of this lot')">
                 <i class="ri-eye-line"></i>
                 <span>{{ lot.viewers }}</span>
               </div>
-              <div class="stat-item clickable" *ngIf="lot.watchers > 0" (click)="openWatchersDialog(lot)" title="Watchers: Dealers who have marked this lot as a favorite">
+              <div class="stat-item clickable" *ngIf="lot.watchers > 0" (click)="openWatchersDialog(lot)" [title]="localizationService.getText('components', 'planned-lots', 'watchersTooltip', 'Watchers: Dealers who have marked this lot as a favorite')">
                 <i class="ri-star-line"></i>
                 <span>{{ lot.watchers }}</span>
               </div>
-              <div class="stat-item clickable" *ngIf="lot.leadListUsers > 0" (click)="openLeadsDialog(lot)" title="Leads: Dealers who have expressed interest in this lot and are on the lead list">
+              <div class="stat-item clickable" *ngIf="lot.leadListUsers > 0" (click)="openLeadsDialog(lot)" [title]="localizationService.getText('components', 'planned-lots', 'leadsTooltip', 'Leads: Dealers who are on the lead list')">
                 <i class="ri-list-check-2"></i>
                 <span>{{ lot.leadListUsers }}</span>
               </div>
-              <div class="stat-item clickable" *ngIf="lot.onlineUsers > 0" (click)="openOnlineDialog(lot)" title="Online Users: Dealers who are currently online and viewing this lot">
+              <div class="stat-item clickable" *ngIf="lot.onlineUsers > 0" (click)="openOnlineDialog(lot)" [title]="localizationService.getText('components', 'planned-lots', 'onlineUsersTooltip', 'Online Users: Dealers who are currently online and viewing this lot')">
                 <i class="ri-user-line"></i>
                 <span>{{ lot.onlineUsers }}</span>
               </div>
@@ -215,7 +215,7 @@
           <ng-template cdkDragPreview>
             <div class="drag-preview">
               <div class="drag-preview-content">
-                <strong>Lot {{ lot.lotNumber }}: {{ lot.year }} {{ lot.make }} {{ lot.model }}</strong>
+                <strong>{{ localizationService.getText('components', 'planned-lots', 'dragPreviewLot', 'Lot') }} {{ lot.lotNumber }}: {{ lot.year }} {{ lot.make }} {{ lot.model }}</strong>
               </div>
             </div>
           </ng-template>
