@@ -20,7 +20,7 @@ import { AuctionStateService } from './auction/auction-state.service';
 import { LotStatus, HammerState } from './models/enums';
 import { KeyboardShortcutService } from './services/keyboard-shortcut.service';
 import { ToastrService } from 'ngx-toastr';
-import { LotDetails } from './models/interfaces';
+import { LotDetails, Bid, Dealer } from './models/interfaces';
 import { AuctionLifecycleService } from './services/auction-lifecycle.service';
 import { LotManagementService } from './services/lot-management.service';
 import { BiddingOrchestrationService } from './services/bidding-orchestration.service';
@@ -211,7 +211,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.biddingOrchestrationService.adjustBidIncrement(amount);
   }
   
-  onBidPlaced(bid: any): void {
+  onBidPlaced(bid: Bid): void {
     this.biddingOrchestrationService.onBidPlaced(bid);
   }
   
@@ -220,12 +220,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
   // Lot selection - delegate to LotManagementService
-  selectLot(lot: any): void {
+  selectLot(lot: LotDetails): void {
     this.lotManagementService.selectLot(lot);
   }
   
   // Dealer messaging - delegate to MessagingService
-  onDealerSelect(dealer: any): void {
+  onDealerSelect(dealer: Dealer | null): void {
     this.messagingService.onDealerSelect(dealer);
   }
   
