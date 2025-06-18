@@ -1,8 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, BehaviorSubject, combineLatest, map, takeUntil } from 'rxjs';
 import { LotDetails, ViewerInfo, SortDirection } from '../../models/interfaces';
 import { UserListDialogComponent } from '../shared/user-list-dialog/user-list-dialog.component';
 import { FormatPricePipe } from '../../pipes/format-price.pipe';
@@ -11,6 +11,13 @@ import { LocalizeTextPipe } from '../../pipes/localize-text.pipe';
 import { ToastrService } from 'ngx-toastr';
 import { LotService } from '../../services/lot.service';
 import { LocalizationService } from '../../services/localization.service';
+
+// Interface for the combined view state
+interface PlannedLotsViewState {
+  sortedLots: LotDetails[];
+  isToggleVisible: boolean;
+  canReorder: boolean;
+}
 
 @Component({
   selector: 'app-planned-lots',
@@ -37,49 +44,97 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   editMode: {[key: number]: {reservePrice: boolean, initialAskingPrice: boolean}} = {};
   
   // Sorting state
-  sortColumn: string = 'lotNumber';
+  sortColumn = 'lotNumber'; // Removed ': string'
   sortDirection: SortDirection = 'asc';
   
   // View mode (compact or detailed)
   viewMode: 'compact' | 'detailed' = 'compact';
   
-  // Track if toggle button should be visible based on screen width
-  isToggleVisible = false;
+  // Reordering state
+  isDragEnabled = false; // Removed ': boolean'
   
   // Dialog state
   selectedLot: LotDetails | null = null;
-  isViewersDialogOpen = false;
-  isWatchersDialogOpen = false;
-  isLeadsDialogOpen = false;
-  isOnlineDialogOpen = false;
+  isViewersDialogOpen = false; // Removed ': boolean'
+  isWatchersDialogOpen = false; // Removed ': boolean'
+  isLeadsDialogOpen = false; // Removed ': boolean'
+  isOnlineDialogOpen = false; // Removed ': boolean'
   viewers: ViewerInfo[] = [];
   watchers: ViewerInfo[] = [];
   leads: ViewerInfo[] = [];
   onlineUsers: ViewerInfo[] = [];
 
-  // Reordering state
-  isDragEnabled = false;
-  
-  // Pre-computed properties
-  sortedLots: LotDetails[] = [];
+  // Internal state subjects
+  private lotsSubject = new BehaviorSubject<LotDetails[]>([]);
+  private sortColumnSubject = new BehaviorSubject<string>('lotNumber');
+  private sortDirectionSubject = new BehaviorSubject<SortDirection>('asc');
+  private isDragEnabledSubject = new BehaviorSubject<boolean>(false);
+
+  // Combined view state observable
+  viewState$: Observable<PlannedLotsViewState>;
 
   // Destroy subject for subscription management
   private destroy$ = new Subject<void>();
   
-  constructor(
-    private toastr: ToastrService,
-    private lotService: LotService,
-    public localizationService: LocalizationService
-  ) {}
+  // Inject dependencies using inject() pattern
+  private toastr = inject(ToastrService);
+  private lotService = inject(LotService);
+  public localizationService = inject(LocalizationService);
+  
+  constructor() {
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.lotsSubject.asObservable(),
+      this.sortColumnSubject.asObservable(),
+      this.sortDirectionSubject.asObservable(),
+      this.isDragEnabledSubject.asObservable()
+    ]).pipe(
+      map(([lots, sortColumn, sortDirection, isDragEnabled]) => {
+        let sortedLots: LotDetails[];
+        
+        if (isDragEnabled) {
+          sortedLots = [...lots];
+        } else {
+          sortedLots = [...lots].sort((a, b) => {
+            const direction = sortDirection === 'asc' ? 1 : -1;
+            
+            // Handle different column types appropriately
+            if (['lotNumber', 'year', 'mileage', 'reservePrice', 'initialAskingPrice', 
+                 'lastAuctionBid', 'indicataMarketPrice', 'viewers', 'watchers', 
+                 'leadListUsers', 'onlineUsers'].includes(sortColumn)) {
+              const aValue = a[sortColumn as keyof LotDetails] as number;
+              const bValue = b[sortColumn as keyof LotDetails] as number;
+              return direction * ((aValue || 0) - (bValue || 0));
+            }
+            
+            // Handle string columns
+            const aValue = String(a[sortColumn as keyof LotDetails] || '');
+            const bValue = String(b[sortColumn as keyof LotDetails] || '');
+            return direction * aValue.localeCompare(bValue);
+          });
+        }
+
+        const width = window.innerWidth;
+        const isToggleVisible = width >= 1025 && width <= 1620;
+
+        return {
+          sortedLots,
+          isToggleVisible,
+          canReorder: lots.length > 1
+        };
+      }),
+      takeUntil(this.destroy$)
+    );
+  }
   
   ngOnInit() {
     this.updateToggleVisibility();
-    this.updateSortedLots();
+    this.updateInternalState();
     window.addEventListener('resize', this.updateToggleVisibility.bind(this));
   }
   
   ngOnChanges() {
-    this.updateSortedLots();
+    this.updateInternalState();
   }
   
   ngOnDestroy() {
@@ -87,35 +142,13 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
-  
-  updateToggleVisibility() {
-    const width = window.innerWidth;
-    this.isToggleVisible = width >= 1025 && width <= 1620;
+
+  private updateInternalState() {
+    this.lotsSubject.next(this.lots);
   }
   
-  private updateSortedLots() {
-    if (this.isDragEnabled) {
-      this.sortedLots = [...this.lots];
-      return;
-    }
-    
-    this.sortedLots = [...this.lots].sort((a, b) => {
-      const direction = this.sortDirection === 'asc' ? 1 : -1;
-      
-      // Handle different column types appropriately
-      if (['lotNumber', 'year', 'mileage', 'reservePrice', 'initialAskingPrice', 
-           'lastAuctionBid', 'indicataMarketPrice', 'viewers', 'watchers', 
-           'leadListUsers', 'onlineUsers'].includes(this.sortColumn)) {
-        const aValue = a[this.sortColumn as keyof LotDetails] as number;
-        const bValue = b[this.sortColumn as keyof LotDetails] as number;
-        return direction * ((aValue || 0) - (bValue || 0));
-      }
-      
-      // Handle string columns
-      const aValue = String(a[this.sortColumn as keyof LotDetails] || '');
-      const bValue = String(b[this.sortColumn as keyof LotDetails] || '');
-      return direction * aValue.localeCompare(bValue);
-    });
+  updateToggleVisibility() {
+    // isToggleVisible calculation is now handled in the viewState$ observable
   }
   
   // Toggle between compact and detailed view
@@ -139,13 +172,14 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
       this.sortDirection = 'asc';
     }
     
-    this.updateSortedLots();
+    this.sortColumnSubject.next(this.sortColumn);
+    this.sortDirectionSubject.next(this.sortDirection);
   }
   
   // Toggle drag and drop mode
   toggleDragMode(): void {
     this.isDragEnabled = !this.isDragEnabled;
-    this.updateSortedLots();
+    this.isDragEnabledSubject.next(this.isDragEnabled);
     
     if (this.isDragEnabled) {
       this.toastr.info('Lot reordering enabled. Drag lots to change their order.', '', {
@@ -158,7 +192,7 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
   
-  // Handle drop event for drag and drop
+  // Handle drop event for drag and drop - remove unused dragItem parameter
   onDrop(event: CdkDragDrop<LotDetails[]>): void {
     if (this.isDragEnabled) {
       // First make a copy of the array to maintain immutability
@@ -176,7 +210,9 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
       // Emit the reordered lots to parent component
       this.lotsReordered.emit(reorderedLots);
       
-      this.toastr.success(`Lot ${event.item.data.lotNumber} moved to position ${event.currentIndex + 1}`);
+      // Get the moved lot from the event data
+      const movedLot = newLots[event.currentIndex];
+      this.toastr.success(`Lot ${movedLot.lotNumber} moved to position ${event.currentIndex + 1}`);
     }
   }
   
@@ -205,7 +241,7 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
     return this.editMode[lotNumber]?.[field as keyof typeof this.editMode[number]] || false;
   }
   
-  // Dialog methods
+  // Dialog methods - now handle keyboard events with same logic as click
   openViewersDialog(lot: LotDetails): void {
     this.selectedLot = lot;
     this.lotService.getLotUserActivity(lot.lotNumber, 'viewer')
@@ -260,25 +296,5 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   
   closeOnlineDialog(): void {
     this.isOnlineDialogOpen = false;
-  }
-
-  // Utility method for mapping column names
-  getSortColumnName(column: string): string {
-    const columnMapping: {[key: string]: string} = {
-      'lotNumber': 'Lot No.',
-      'make model': 'Vehicle',
-      'year': 'Year',
-      'transmission': 'Transmission',
-      'fuel': 'Fuel',
-      'color': 'Color',
-      'mileage': 'Mileage',
-      'location': 'Location',
-      'registration': 'Registration',
-      'reservePrice': 'Reserve Price',
-      'initialAskingPrice': 'Asking Price',
-      'lastAuctionBid': 'Last Auction',
-      'indicataMarketPrice': 'Indicata Price'
-    };
-    return columnMapping[column] || column;
   }
 }

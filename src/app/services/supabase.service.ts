@@ -16,27 +16,23 @@ export class SupabaseService {
    */
   getClient(): SupabaseClient {
     if (!SupabaseService.supabaseInstance) {
-      try {
-        SupabaseService.supabaseInstance = createClient(
-          environment.supabase.url,
-          environment.supabase.anonKey,
-          {
-            auth: {
-              persistSession: false,
-              autoRefreshToken: false,
-              detectSessionInUrl: false,
-              flowType: 'implicit'
-            },
-            global: {
-              headers: {
-                'X-Client-Info': 'auction-app'
-              }
+      SupabaseService.supabaseInstance = createClient(
+        environment.supabase.url,
+        environment.supabase.anonKey,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            flowType: 'implicit'
+          },
+          global: {
+            headers: {
+              'X-Client-Info': 'auction-app'
             }
           }
-        );
-      } catch (error) {
-        throw error;
-      }
+        }
+      );
     }
     
     return SupabaseService.supabaseInstance;

@@ -23,19 +23,22 @@ interface SpeechRecognitionAlternative {
   confidence: number;
 }
 
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class SpeechRecognitionService {
-  private recognition: any;
+  private recognition: SpeechRecognition | null = null; // Changed from any to SpeechRecognition | null
   private isListening = new BehaviorSubject<boolean>(false);
   private commandDetected = new BehaviorSubject<string>('');
   private noSpeechRetryCount = 0;
   private maxNoSpeechRetries = 3;
-  private retryDelay = 1000; // 1 second delay between retries
-  private retryTimeout: any = null;
-  private keyDownListener: any = null;
-  private keyUpListener: any = null;
+  private retryTimeout: number | null = null;
+  private keyDownListener: ((event: KeyboardEvent) => void) | null = null; // Changed from any to proper type
+  private keyUpListener: ((event: KeyboardEvent) => void) | null = null; // Changed from any to proper type
   private isAltKeyHeld = false;
   private hasShownActivationToast = false;
   private sensitivity = new BehaviorSubject<number>(0.5);
@@ -73,7 +76,7 @@ export class SpeechRecognitionService {
     'stop simulation'
   ];
 
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   private toastr = inject(ToastrService);
 
   constructor() {
@@ -83,7 +86,7 @@ export class SpeechRecognitionService {
 
   private initializeSpeechRecognition(): void {
     if ('webkitSpeechRecognition' in window) {
-      this.recognition = new (window as any).webkitSpeechRecognition();
+      this.recognition = new (window as unknown as { webkitSpeechRecognition: new () => SpeechRecognition }).webkitSpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
       this.recognition.lang = 'en-US';
@@ -98,7 +101,7 @@ export class SpeechRecognitionService {
           try {
             // Check if recognition is already running before starting
             setTimeout(() => {
-              if (this.isListening.value && this.isAltKeyHeld) {
+              if (this.isListening.value && this.isAltKeyHeld && this.recognition) {
                 try {
                   this.recognition.start();
                 } catch (error) {
@@ -114,7 +117,7 @@ export class SpeechRecognitionService {
         }
       };
 
-      this.recognition.onerror = (event: any) => {
+      this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => { // Changed from any to proper type
         // Handle critical errors that affect functionality
         if (event.error === 'no-speech') {
           this.noSpeechRetryCount++;
@@ -144,8 +147,6 @@ export class SpeechRecognitionService {
       };
 
       this.recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interimTranscript = '';
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript.toLowerCase().trim();
           const confidence = event.results[i][0].confidence;
@@ -164,8 +165,6 @@ export class SpeechRecognitionService {
                 break;
               }
             }
-          } else {
-            interimTranscript += transcript;
           }
         }
       };
@@ -256,7 +255,7 @@ export class SpeechRecognitionService {
       // Small delay to ensure complete stop before starting
       setTimeout(() => {
         try {
-          this.recognition.start();
+          this.recognition?.start();
           
           // Only show the activation toast the first time
           if (!this.hasShownActivationToast) {
@@ -301,10 +300,6 @@ export class SpeechRecognitionService {
     return this.commandDetected.asObservable();
   }
   
-  public getSupportedCommands(): string[] {
-    return [...this.commands];
-  }
-  
   public setSensitivity(sensitivity: number): void {
     this.sensitivity.next(sensitivity);
   }
@@ -316,5 +311,24 @@ export class SpeechRecognitionService {
   ngOnDestroy() {
     this.removeKeyListeners();
     this.stopListening();
+  }
+}
+
+// Add missing interface declarations for SpeechRecognition API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition: new () => SpeechRecognition;
   }
 }

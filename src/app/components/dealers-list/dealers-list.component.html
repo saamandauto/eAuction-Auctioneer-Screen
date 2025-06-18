@@ -1,7 +1,10 @@
 <div class="history-panel">
   <div class="panel-header">
     <h3>Dealers</h3>
-    <span class="bid-count">{{ displayDealers.length }} dealers</span>
+    <!-- Use single async pipe to unwrap the entire view state -->
+    <ng-container *ngIf="viewState$ | async as vm">
+      <span class="bid-count">{{ vm.displayedDealers.length }} dealers</span>
+    </ng-container>
   </div>
 
   <div class="filter-controls">
@@ -42,63 +45,71 @@
     </div>
   </div>
 
-  <div class="table-container" [class.expanded]="expanded">
-    <table class="history-table">
-      <thead>
-        <tr>
-          <th>Dealer</th>
-          <th>Status</th>
-          <th>Messages</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let dealer of displayedDealers"
-            [title]="dealer.tooltipText"
-            (click)="onDealerClick(dealer)"
-            [class.selected]="dealer.isSelected"
-            class="clickable">
-          <td>
-            {{ getDealerName(dealer) }}
-          </td>
-          <td>
-            <div class="dealer-status">
-              <span class="status-icon" *ngIf="dealer.displayStatus.isViewer">
-                <i class="ri-eye-line" title="Viewer"></i>
-              </span>
-              <span class="status-icon" *ngIf="dealer.displayStatus.isWatcher">
-                <i class="ri-star-line" title="Watcher"></i>
-              </span>
-              <span class="status-icon" *ngIf="dealer.displayStatus.isLead">
-                <i class="ri-list-check-2" title="Lead"></i>
-              </span>
-              <span class="status-icon" *ngIf="dealer.displayStatus.isOnline">
-                <i class="ri-user-line" title="Online"></i>
-              </span>
-            </div>
-          </td>
-          <td>
-            <div class="message-count" *ngIf="dealer.messageCount.total > 0">
-              {{ dealer.messageCount.total }}
-              <span class="unread-count" *ngIf="dealer.messageCount.unread > 0">
-                ({{ dealer.messageCount.unread }} new)
-              </span>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="displayedDealers.length === 0" class="empty-row">
-          <td colspan="3" style="text-align: center; padding: 20px;">
-            <div>No dealers found</div>
-          </td>
-        </tr>
-        <tr *ngFor="let empty of emptyRows" class="empty-row">
-          <td colspan="3">&nbsp;</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <button *ngIf="displayDealers.length > 10" 
-         class="show-more-button" 
-         (click)="toggleExpanded()">
-    {{ expanded ? 'Show less' : 'Show more' }}
-  </button>
+  <!-- Use single async pipe to unwrap the entire view state -->
+  <ng-container *ngIf="viewState$ | async as vm">
+    <div class="table-container" [class.expanded]="expanded">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Dealer</th>
+            <th>Status</th>
+            <th>Messages</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dealer of vm.displayedDealers"
+              [title]="dealer.tooltipText"
+              tabindex="0"
+              role="button"
+              (click)="onDealerClick(dealer)"
+              (keydown.enter)="onDealerClick(dealer)"
+              (keydown.space)="onDealerClick(dealer)"
+              [class.selected]="dealer.isSelected"
+              class="clickable">
+            <td>
+              {{ getDealerName(dealer) }}
+            </td>
+            <td>
+              <div class="dealer-status">
+                <span class="status-icon" *ngIf="dealer.displayStatus.isViewer">
+                  <i class="ri-eye-line" title="Viewer"></i>
+                </span>
+                <span class="status-icon" *ngIf="dealer.displayStatus.isWatcher">
+                  <i class="ri-star-line" title="Watcher"></i>
+                </span>
+                <span class="status-icon" *ngIf="dealer.displayStatus.isLead">
+                  <i class="ri-list-check-2" title="Lead"></i>
+                </span>
+                <span class="status-icon" *ngIf="dealer.displayStatus.isOnline">
+                  <i class="ri-user-line" title="Online"></i>
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="message-count" *ngIf="dealer.messageCount.total > 0">
+                {{ dealer.messageCount.total }}
+                <span class="unread-count" *ngIf="dealer.messageCount.unread > 0">
+                  ({{ dealer.messageCount.unread }} new)
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="vm.displayedDealers.length === 0" class="empty-row">
+            <td colspan="3" style="text-align: center; padding: 20px;">
+              <div>No dealers found</div>
+            </td>
+          </tr>
+          <tr *ngFor="let empty of vm.emptyRows" class="empty-row">
+            <td colspan="3">&nbsp;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <button *ngIf="vm.canExpand" 
+           class="show-more-button" 
+           (click)="toggleExpanded()">
+      {{ expanded ? 'Show less' : 'Show more' }}
+    </button>
+  </ng-container>
 </div>

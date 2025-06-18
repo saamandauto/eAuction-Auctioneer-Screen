@@ -1,11 +1,19 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, combineLatest, map, takeUntil } from 'rxjs';
 import { VoiceService } from '../../services/voice.service';
 import { SpeechRecognitionService } from '../../services/speech-recognition.service';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
 import { LocalizationService } from '../../services/localization.service';
+
+// Interface for the combined view state
+interface HeaderViewState {
+  voiceEnabled: boolean;
+  hasCreditsError: boolean;
+  isListening: boolean;
+  showShortcutsInUI: boolean;
+}
 
 @Component({
   selector: 'app-header',
@@ -19,10 +27,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @Input() auctionId = '';
   @Input() auctionDate = '';
   @Input() auctionCompany = '';
-  @Input() currentDateTime: string = '';
-  @Input() isAuctionStarted: boolean = false;
-  @Input() isViewingLots: boolean = true;
-  @Input() simulatedBiddingEnabled: boolean = false;
+  @Input() currentDateTime = ''; // Removed ': string'
+  @Input() isAuctionStarted = false; // Removed ': boolean'
+  @Input() isViewingLots = true; // Removed ': boolean'
+  @Input() simulatedBiddingEnabled = false; // Removed ': boolean'
 
   @Output() startAuction = new EventEmitter<void>();
   @Output() endAuction = new EventEmitter<void>();
@@ -30,37 +38,38 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @Output() toggleSimulatedBidding = new EventEmitter<boolean>();
   @Output() openSettings = new EventEmitter<void>();
 
-  voiceEnabled = false;
-  hasCreditsError = false;
-  isListening = false;
-  showShortcutsInUI = false;
-  
-  get isListeningValue(): boolean {
-    return this.isListening;
-  }
+  // Combined view state observable
+  viewState$: Observable<HeaderViewState>;
   
   // Destroy subject for subscription management
   private destroy$ = new Subject<void>();
 
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   private voiceService = inject(VoiceService);
   private speechRecognitionService = inject(SpeechRecognitionService);
   private keyboardShortcutService = inject(KeyboardShortcutService);
   public localizationService = inject(LocalizationService);
 
+  constructor() {
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.voiceService.getVoiceEnabled(),
+      this.voiceService.getHasCreditsError(),
+      this.speechRecognitionService.getIsListening(),
+      this.keyboardShortcutService.getShowShortcutsInUI()
+    ]).pipe(
+      map(([voiceEnabled, hasCreditsError, isListening, showShortcutsInUI]) => ({
+        voiceEnabled,
+        hasCreditsError,
+        isListening,
+        showShortcutsInUI
+      })),
+      takeUntil(this.destroy$)
+    );
+  }
+
   ngOnInit() {
-    this.voiceService.getVoiceEnabled()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(enabled => this.voiceEnabled = enabled);
-    
-    this.voiceService.getHasCreditsError()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(hasError => this.hasCreditsError = hasError);
-    
-    this.speechRecognitionService.getIsListening()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isListening => this.isListening = isListening);
-    
+    // Listen for speech recognition commands
     this.speechRecognitionService.getCommandDetected()
       .pipe(takeUntil(this.destroy$))
       .subscribe(command => {
@@ -72,10 +81,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
           this.onToggleSimulatedBidding();
         }
       });
-
-    this.keyboardShortcutService.getShowShortcutsInUI()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(show => this.showShortcutsInUI = show);
   }
 
   ngOnDestroy() {
@@ -85,26 +90,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   onStartAuction() {
     this.startAuction.emit();
-    if (this.voiceEnabled && !this.hasCreditsError) {
-      this.voiceService.speak('Auction started.');
-    }
+    // Voice feedback will be handled by the service that receives this event
   }
 
   onEndAuction() {
     this.endAuction.emit();
-    if (this.voiceEnabled && !this.hasCreditsError) {
-      this.voiceService.speak('Auction ended.');
-    }
+    // Voice feedback will be handled by the service that receives this event
   }
   
   onToggleView() {
     this.toggleView.emit();
-    if (this.voiceEnabled && !this.hasCreditsError) {
-      const message = this.isViewingLots ? 
-        'Viewing auction interface.' : 
-        'Viewing planned lots.';
-      this.voiceService.speak(message);
-    }
+    // Voice feedback will be handled by the service that receives this event
   }
 
   onToggleSimulatedBidding() {
@@ -119,10 +115,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   
   toggleSpeechRecognition() {
     this.speechRecognitionService.toggleListening();
-  }
-
-  onToggleShowShortcuts() {
-    this.keyboardShortcutService.setShowShortcutsInUI(this.showShortcutsInUI);
   }
 
   onOpenSettings() {

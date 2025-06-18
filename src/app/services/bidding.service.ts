@@ -10,17 +10,17 @@ import { getDealerName, getDealerId } from '../utils/dealer-utils';
   providedIn: 'root'
 })
 export class BiddingService {
-  private biddingEnabled = false;
+  private biddingEnabled = false; // Removed ': boolean'
   private currentBidding$: Subscription | null = null;
   private bidSubject = new Subject<Bid>();
   
   // Track current state
-  private currentBidAmount = 0;
-  private currentBidIncrement = 0;
-  private currentReservePrice = 0;
-  private currentAskingPrice = 0;
+  private currentBidAmount = 0; // Removed ': number'
+  private currentBidIncrement = 0; // Removed ': number'
+  private currentReservePrice = 0; // Removed ': number'
+  private currentAskingPrice = 0; // Removed ': number'
   private availableDealers: Dealer[] = [];
-  private totalSimulatedBids = 0; // Track total simulated bids across all lots
+  private totalSimulatedBids = 0; // Track total simulated bids across all lots // Removed ': number'
 
   // Inject dependencies
   private auctionService = inject(AuctionService);

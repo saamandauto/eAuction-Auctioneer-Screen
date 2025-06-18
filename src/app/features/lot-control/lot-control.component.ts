@@ -1,10 +1,10 @@
 import { Component, Input, Output, EventEmitter, ViewChild, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject, takeUntil } from 'rxjs';
 import { LotControlsComponent } from '../../components/lot-controls/lot-controls.component';
 import { LotStatus, HammerState } from '../../models/enums';
 import { LotDetails, Bid } from '../../models/interfaces';
 import { AuctionStateService } from '../../auction/auction-state.service';
-import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-lot-control',
@@ -36,34 +36,34 @@ export class LotControlComponent implements OnInit, OnDestroy {
   @Output() markAsSold = new EventEmitter<void>();
   @Output() progressHammerState = new EventEmitter<void>();
 
-  private subscriptions: Subscription[] = [];
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
 
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   private auctionState = inject(AuctionStateService);
 
   ngOnInit() {
     // Subscribe to bids changes to reset hammer sequence when new bids arrive
-    this.subscriptions.push(
-      this.auctionState.getBids().subscribe(() => {
-        this.handleNewBid();
-      })
-    );
+    this.auctionState.getBids().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.handleNewBid();
+    });
 
     // Subscribe to hammer state changes to reset hammer sequence when needed
-    this.subscriptions.push(
-      this.auctionState.getHammerState().subscribe(state => {
-        // If hammer state was reset to ACCEPTING_BIDS, reset the sequence
-        if (state === HammerState.ACCEPTING_BIDS) {
-          this.resetHammerSequence();
-        }
-      })
-    );
+    this.auctionState.getHammerState().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(state => {
+      // If hammer state was reset to ACCEPTING_BIDS, reset the sequence
+      if (state === HammerState.ACCEPTING_BIDS) {
+        this.resetHammerSequence();
+      }
+    });
   }
 
   ngOnDestroy() {
-    // Clean up all subscriptions
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.subscriptions = [];
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /**

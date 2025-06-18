@@ -1,7 +1,10 @@
 <div class="panel messages-panel">
   <div class="panel-header">
     <h3>Messages {{ selectedDealer ? '- ' + getDealerName(selectedDealer) : '' }}</h3>
-    <span class="message-count">{{ filteredMessages.length }} messages</span>
+    <!-- Use single async pipe to unwrap the entire view state -->
+    <ng-container *ngIf="viewState$ | async as vm">
+      <span class="message-count">{{ vm.filteredMessages.length }} messages</span>
+    </ng-container>
   </div>
 
   <div class="message-controls">
@@ -27,47 +30,54 @@
     </div>
   </div>
 
-  <div class="messages-container">
-    <div class="messages-list">
-      <div *ngFor="let message of filteredMessages" 
-           class="message-bubble" 
-           [class.alternate]="message.alternate"
-           [class.global]="message.isGlobal"
-           [class.unread]="!message.isRead"
-           (click)="onMessageClick(message)">
-        <div class="message-header" *ngIf="!message.alternate">
-          <span class="dealer-name">{{ message.dealer }}</span>
-          <span class="message-time">{{ message.time }}</span>
+  <!-- Use single async pipe to unwrap the entire view state -->
+  <ng-container *ngIf="viewState$ | async as vm">
+    <div class="messages-container">
+      <div class="messages-list">
+        <div *ngFor="let message of vm.filteredMessages" 
+             class="message-bubble" 
+             [class.alternate]="message.alternate"
+             [class.global]="message.isGlobal"
+             [class.unread]="!message.isRead"
+             tabindex="0"
+             role="button"
+             (click)="onMessageClick(message)"
+             (keydown.enter)="onMessageClick(message)"
+             (keydown.space)="onMessageClick(message)">
+          <div class="message-header" *ngIf="!message.alternate">
+            <span class="dealer-name">{{ message.dealer }}</span>
+            <span class="message-time">{{ message.time }}</span>
+          </div>
+          <div class="message-content">
+            {{ message.text }}
+            <span class="recipient-info" *ngIf="message.alternate && !message.isGlobal && !selectedDealer && message.recipientId">
+              to {{ vm.dealerNamesMap.get(message.recipientId) || 'Unknown' }}
+            </span>
+          </div>
+          <div class="message-footer" *ngIf="message.alternate">
+            <span class="message-time">{{ message.time }}</span>
+            <span class="message-status">
+              {{ message.isGlobal ? 'Sent to all' : 'Sent' }}
+            </span>
+          </div>
         </div>
-        <div class="message-content">
-          {{ message.text }}
-          <span class="recipient-info" *ngIf="message.alternate && !message.isGlobal && !selectedDealer && message.recipientId">
-            to {{ getDealerNameById(message.recipientId) }}
-          </span>
+        
+        <div class="empty-state" *ngIf="vm.filteredMessages.length === 0">
+          <i class="ri-chat-3-line"></i>
+          <p>No messages to display</p>
         </div>
-        <div class="message-footer" *ngIf="message.alternate">
-          <span class="message-time">{{ message.time }}</span>
-          <span class="message-status">
-            {{ message.isGlobal ? 'Sent to all' : 'Sent' }}
-          </span>
-        </div>
-      </div>
-      
-      <div class="empty-state" *ngIf="filteredMessages.length === 0">
-        <i class="ri-chat-3-line"></i>
-        <p>No messages to display</p>
       </div>
     </div>
-  </div>
 
-  <div class="message-input-container">
-    <input type="text" 
-           [(ngModel)]="newMessage"
-           [placeholder]="messagePlaceholder"
-           class="message-input"
-           (keyup.enter)="onSendMessage()">
-    <button class="button button-primary" (click)="onSendMessage()">
-      <i class="ri-send-plane-fill"></i>
-    </button>
-  </div>
+    <div class="message-input-container">
+      <input type="text" 
+             [(ngModel)]="newMessage"
+             [placeholder]="vm.messagePlaceholder"
+             class="message-input"
+             (keyup.enter)="onSendMessage()">
+      <button class="button button-primary" (click)="onSendMessage()">
+        <i class="ri-send-plane-fill"></i>
+      </button>
+    </div>
+  </ng-container>
 </div>

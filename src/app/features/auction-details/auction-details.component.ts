@@ -1,8 +1,20 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuctionDetailsComponent } from '../../components/auction-details/auction-details.component';
-import { Observable } from 'rxjs';
+import { Subject, Observable, combineLatest, map, takeUntil } from 'rxjs';
 import { AuctionStatsService } from '../../services/auction-stats.service';
+
+// Interface for the combined view state
+interface AuctionDetailsFeatureViewState {
+  soldLots: number;
+  withdrawnLots: number;
+  totalBids: number;
+  auctioneerBids: number;
+  dealerBids: number;
+  totalSoldValue: number;
+  totalReserveValue: number;
+  performance: {sum: string, percentage: string};
+}
 
 @Component({
   selector: 'app-auction-details-feature',
@@ -14,35 +26,53 @@ import { AuctionStatsService } from '../../services/auction-stats.service';
   templateUrl: './auction-details.component.html',
   styleUrls: ['./auction-details.component.scss']
 })
-export class AuctionDetailsFeatureComponent implements OnInit {
-  // Statistics observables
-  soldLots$: Observable<number>;
-  withdrawnLots$: Observable<number>;
-  totalBids$: Observable<number>;
-  auctioneerBids$: Observable<number>;
-  dealerBids$: Observable<number>;
-  totalSoldValue$: Observable<number>;
-  totalReserveValue$: Observable<number>;
-  performance$: Observable<{sum: string, percentage: string}>;
+export class AuctionDetailsFeatureComponent implements OnDestroy {
+  // Combined view state observable
+  viewState$: Observable<AuctionDetailsFeatureViewState>;
   
-  // Inject dependencies
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
+  
+  // Inject dependencies using inject() pattern
   private auctionStatsService = inject(AuctionStatsService);
   
   constructor() {
-    // Initialize observables
-    this.soldLots$ = this.auctionStatsService.getSoldLots();
-    this.withdrawnLots$ = this.auctionStatsService.getWithdrawnLots();
-    this.auctioneerBids$ = this.auctionStatsService.getAuctioneerBidsCount();
-    this.dealerBids$ = this.auctionStatsService.getDealerBidsCount();
-    this.totalSoldValue$ = this.auctionStatsService.getTotalSoldValue();
-    this.totalReserveValue$ = this.auctionStatsService.getTotalReserveValue();
-    this.performance$ = this.auctionStatsService.getPerformanceMetrics();
-    
-    // totalBids is calculated from auctioneerBids and dealerBids
-    this.totalBids$ = this.auctionStatsService.getTotalBidsCount();
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.auctionStatsService.getSoldLots(),
+      this.auctionStatsService.getWithdrawnLots(),
+      this.auctionStatsService.getAuctioneerBidsCount(),
+      this.auctionStatsService.getDealerBidsCount(),
+      this.auctionStatsService.getTotalSoldValue(),
+      this.auctionStatsService.getTotalReserveValue(),
+      this.auctionStatsService.getPerformanceMetrics(),
+      this.auctionStatsService.getTotalBidsCount()
+    ]).pipe(
+      map(([
+        soldLots,
+        withdrawnLots,
+        auctioneerBids,
+        dealerBids,
+        totalSoldValue,
+        totalReserveValue,
+        performance,
+        totalBids
+      ]) => ({
+        soldLots,
+        withdrawnLots,
+        totalBids,
+        auctioneerBids,
+        dealerBids,
+        totalSoldValue,
+        totalReserveValue,
+        performance
+      })),
+      takeUntil(this.destroy$)
+    );
   }
 
-  ngOnInit(): void {
-    // No initialization required as we're using observables directly from the service
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

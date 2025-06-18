@@ -14,14 +14,14 @@ export class ConfirmationDialogComponent {
   @Input() message = 'Are you sure you want to proceed?';
   @Input() contextInfo = ''; // Additional context information
   
-  @Output() confirm = new EventEmitter<void>();
-  @Output() cancel = new EventEmitter<void>();
+  @Output() dialogConfirm = new EventEmitter<void>(); // Renamed from 'confirm'
+  @Output() dialogCancel = new EventEmitter<void>(); // Renamed from 'cancel'
 
   onConfirm(): void {
-    this.confirm.emit();
+    this.dialogConfirm.emit();
   }
   
   onCancel(): void {
-    this.cancel.emit();
+    this.dialogCancel.emit();
   }
 }

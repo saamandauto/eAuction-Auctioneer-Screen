@@ -26,19 +26,43 @@
     </div>
   </div>
   <div class="vehicle-stats">
-    <div class="stat-item" (click)="openViewersDialog()" [title]="'components' | localizeText:'vehicle-details':'viewersTooltip':'Viewers: Dealers who have viewed the detail page of this lot'">
+    <div class="stat-item" 
+         tabindex="0"
+         role="button"
+         (click)="openViewersDialog()" 
+         (keydown.enter)="openViewersDialog()"
+         (keydown.space)="openViewersDialog()"
+         [title]="'components' | localizeText:'vehicle-details':'viewersTooltip':'Viewers: Dealers who have viewed the detail page of this lot'">
       <i class="ri-eye-line"></i>
       <span>{{ lot?.viewers }}</span>
     </div>
-    <div class="stat-item" (click)="openWatchersDialog()" [title]="'components' | localizeText:'vehicle-details':'watchersTooltip':'Watchers: Dealers who have marked this lot as a favorite'">
+    <div class="stat-item" 
+         tabindex="0"
+         role="button"
+         (click)="openWatchersDialog()" 
+         (keydown.enter)="openWatchersDialog()"
+         (keydown.space)="openWatchersDialog()"
+         [title]="'components' | localizeText:'vehicle-details':'watchersTooltip':'Watchers: Dealers who have marked this lot as a favorite'">
       <i class="ri-star-line"></i>
       <span>{{ lot?.watchers }}</span>
     </div>
-    <div class="stat-item" (click)="openLeadsDialog()" [title]="'components' | localizeText:'vehicle-details':'leadsTooltip':'Leads: Dealers who are on the lead list'">
+    <div class="stat-item" 
+         tabindex="0"
+         role="button"
+         (click)="openLeadsDialog()" 
+         (keydown.enter)="openLeadsDialog()"
+         (keydown.space)="openLeadsDialog()"
+         [title]="'components' | localizeText:'vehicle-details':'leadsTooltip':'Leads: Dealers who are on the lead list'">
       <i class="ri-list-check-2"></i>
       <span>{{ lot?.leadListUsers }}</span>
     </div>
-    <div class="stat-item" (click)="onOnlineClick()" [title]="'components' | localizeText:'vehicle-details':'onlineUsersTooltip':'Online Users: Dealers who are currently online and viewing this lot'">
+    <div class="stat-item" 
+         tabindex="0"
+         role="button"
+         (click)="onOnlineClick()" 
+         (keydown.enter)="onOnlineClick()"
+         (keydown.space)="onOnlineClick()"
+         [title]="'components' | localizeText:'vehicle-details':'onlineUsersTooltip':'Online Users: Dealers who are currently online and viewing this lot'">
       <i class="ri-user-line"></i>
       <span>{{ lot?.onlineUsers }}</span>
     </div>

@@ -63,7 +63,7 @@ export class AuctionStateService {
   // Type-safe mapping of state keys to their BehaviorSubject observables
   private stateSubjects: { [K in AuctionStateKey]?: BehaviorSubject<AuctionState[K]> } = {};
 
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   private dealerService = inject(DealerService);
   private lotService = inject(LotService);
   private auctionDataService = inject(AuctionDataService);

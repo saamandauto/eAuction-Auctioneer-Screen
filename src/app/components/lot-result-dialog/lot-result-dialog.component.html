@@ -1,4 +1,4 @@
-<div class="dialog-overlay" *ngIf="isOpen" (click)="onClose()">
+<div class="dialog-overlay" *ngIf="isOpen" (click)="handleClose()">
   <div class="dialog" (click)="$event.stopPropagation()">
     <div class="dialog-header">
       <div class="header-content">
@@ -8,7 +8,7 @@
           {{ finalState?.status }}
         </div>
       </div>
-      <button class="button-icon" (click)="onClose()">
+      <button class="button-icon" (click)="handleClose()">
         <i class="ri-close-line"></i>
       </button>
     </div>

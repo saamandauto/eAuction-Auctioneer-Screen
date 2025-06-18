@@ -1,9 +1,23 @@
-import { Component, Input, Output, EventEmitter, HostListener, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject, Observable, BehaviorSubject, combineLatest, map, takeUntil } from 'rxjs';
 import { LotStatus, HammerState } from '../../models/enums';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
 import { ConfirmationDialogComponent } from '../shared/confirmation-dialog/confirmation-dialog.component';
 import { Bid, LotDetails } from '../../models/interfaces';
+
+// Interface for the combined view state
+interface LotControlsViewState {
+  showShortcutsInUI: boolean;
+  canStartLot: boolean;
+  canMoveLot: boolean;
+  canNoSale: boolean;
+  canWithdraw: boolean;
+  canMarkAsSold: boolean;
+  canUseHammer: boolean;
+  statusText: string;
+  timerClass: string;
+}
 
 enum HammerSequenceState {
   IDLE = 'IDLE',
@@ -19,7 +33,7 @@ enum HammerSequenceState {
   templateUrl: './lot-controls.component.html',
   styleUrls: ['./lot-controls.component.scss']
 })
-export class LotControlsComponent {
+export class LotControlsComponent implements OnChanges, OnDestroy {
   @Input() lotStatus: LotStatus = LotStatus.PENDING;
   @Input() hammerState: HammerState = HammerState.ACCEPTING_BIDS;
   @Input() canControlLot = false;
@@ -57,15 +71,109 @@ export class LotControlsComponent {
   confirmationDialogContext = '';
   confirmationAction: 'noSale' | 'withdrawLot' | 'markAsSold' | null = null;
   
-  showShortcutsInUI = false;
+  // BehaviorSubjects for reactive inputs
+  private lotStatusSubject = new BehaviorSubject<LotStatus>(LotStatus.PENDING);
+  private hammerStateSubject = new BehaviorSubject<HammerState>(HammerState.ACCEPTING_BIDS);
+  private canControlLotSubject = new BehaviorSubject<boolean>(false);
+  private canUseHammerSubject = new BehaviorSubject<boolean>(false);
+  private hasBidsSubject = new BehaviorSubject<boolean>(false);
+  private skipConfirmationsSubject = new BehaviorSubject<boolean>(false);
+  private currentLotSubject = new BehaviorSubject<LotDetails | null>(null);
+  private currentHighestBidSubject = new BehaviorSubject<number | null>(null);
+  private highestBidSubject = new BehaviorSubject<Bid | null>(null);
+  
+  // Combined view state observable
+  viewState$: Observable<LotControlsViewState>;
+  
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
 
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   private keyboardShortcutService = inject(KeyboardShortcutService);
 
   constructor() {
-    this.keyboardShortcutService.getShowShortcutsInUI().subscribe(show => {
-      this.showShortcutsInUI = show;
-    });
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.keyboardShortcutService.getShowShortcutsInUI(),
+      this.lotStatusSubject.asObservable(),
+      this.hammerStateSubject.asObservable(),
+      this.canControlLotSubject.asObservable(),
+      this.canUseHammerSubject.asObservable(),
+      this.hasBidsSubject.asObservable(),
+      this.skipConfirmationsSubject.asObservable(),
+      this.currentLotSubject.asObservable(),
+      this.currentHighestBidSubject.asObservable(),
+      this.highestBidSubject.asObservable()
+    ]).pipe(
+      map(([
+        showShortcutsInUI,
+        lotStatus,
+        hammerState,
+        canControlLot,
+        canUseHammer,
+        hasBids,
+        skipConfirmations,
+        currentLot,
+        currentHighestBid,
+        highestBid
+      ]) => ({
+        showShortcutsInUI,
+        canStartLot: lotStatus === LotStatus.PENDING,
+        canMoveLot: lotStatus === LotStatus.SOLD || 
+                    lotStatus === LotStatus.NO_SALE || 
+                    lotStatus === LotStatus.WITHDRAWN,
+        canNoSale: lotStatus === LotStatus.ACTIVE && !this.withdrawCountdownActive,
+        canWithdraw: lotStatus === LotStatus.ACTIVE,
+        canMarkAsSold: canUseHammer && !this.withdrawCountdownActive,
+        canUseHammer: canUseHammer && 
+                     lotStatus === LotStatus.ACTIVE && 
+                     !this.isHammerSequenceInProgress() && 
+                     hasBids && 
+                     !this.withdrawCountdownActive,
+        statusText: this.getStatusText(lotStatus),
+        timerClass: this.getTimerClass(lotStatus)
+      })),
+      takeUntil(this.destroy$)
+    );
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Update BehaviorSubjects when inputs change
+    if (changes['lotStatus']) {
+      this.lotStatusSubject.next(this.lotStatus);
+    }
+    if (changes['hammerState']) {
+      this.hammerStateSubject.next(this.hammerState);
+    }
+    if (changes['canControlLot']) {
+      this.canControlLotSubject.next(this.canControlLot);
+    }
+    if (changes['canUseHammer']) {
+      this.canUseHammerSubject.next(this.canUseHammer);
+    }
+    if (changes['hasBids']) {
+      this.hasBidsSubject.next(this.hasBids);
+    }
+    if (changes['skipConfirmations']) {
+      this.skipConfirmationsSubject.next(this.skipConfirmations);
+    }
+    if (changes['currentLot']) {
+      this.currentLotSubject.next(this.currentLot);
+    }
+    if (changes['currentHighestBid']) {
+      this.currentHighestBidSubject.next(this.currentHighestBid);
+    }
+    if (changes['highestBid']) {
+      this.highestBidSubject.next(this.highestBid);
+    }
+  }
+
+  ngOnDestroy() {
+    // Clean up all timers
+    this.stopDotAnimation();
+    this.cancelWithdrawalCountdown();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -91,14 +199,14 @@ export class LotControlsComponent {
     }
   }
 
-  get statusText(): string {
-    if (this.lotStatus === LotStatus.SOLD) {
+  private getStatusText(lotStatus: LotStatus): string {
+    if (lotStatus === LotStatus.SOLD) {
       return 'Lot has been sold';
-    } else if (this.lotStatus === LotStatus.NO_SALE) {
+    } else if (lotStatus === LotStatus.NO_SALE) {
       return 'Lot was not sold';
-    } else if (this.lotStatus === LotStatus.WITHDRAWN) {
+    } else if (lotStatus === LotStatus.WITHDRAWN) {
       return 'Lot has been withdrawn';
-    } else if (this.lotStatus === LotStatus.ACTIVE) {
+    } else if (lotStatus === LotStatus.ACTIVE) {
       if (this.withdrawCountdownActive) {
         return `Withdrawing in ${this.withdrawCountdownValue}`;
       }
@@ -115,8 +223,8 @@ export class LotControlsComponent {
     return '';
   }
 
-  get timerClass(): string {
-    switch (this.lotStatus) {
+  private getTimerClass(lotStatus: LotStatus): string {
+    switch (lotStatus) {
       case LotStatus.ACTIVE:
         return this.withdrawCountdownActive ? 'withdrawn' : 'active';
       case LotStatus.SOLD:
@@ -352,11 +460,5 @@ export class LotControlsComponent {
       this.animationTimer = null;
       this.dots = '';
     }
-  }
-
-  ngOnDestroy() {
-    // Clean up all timers
-    this.stopDotAnimation();
-    this.cancelWithdrawalCountdown();
   }
 }

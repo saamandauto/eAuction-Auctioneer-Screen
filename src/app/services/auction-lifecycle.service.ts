@@ -3,7 +3,7 @@ import { ToastrService } from 'ngx-toastr';
 import { VoiceService } from './voice.service';
 import { BiddingService } from './bidding.service';
 import { AuctionStateService } from '../auction/auction-state.service';
-import { LotDetails } from '../models/interfaces';
+import { LotDetails, Dealer } from '../models/interfaces';
 import { AuctionStatsService } from './auction-stats.service';
 
 @Injectable({
@@ -31,8 +31,8 @@ export class AuctionLifecycleService {
     this.toastr.success('Auction started successfully');
     
     // Enhanced welcome message with auction details
-    const activeDealers = this.auctionState.getValue('dealers').filter((d: any) => {
-      const type = d.TYPE;
+    const activeDealers = this.auctionState.getValue('dealers').filter((d: Dealer) => {
+      const type = d.type;
       return type !== 'Bid User 1' && type !== 'Bid User 2';
     });
     

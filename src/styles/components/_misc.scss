@@ -21,7 +21,42 @@
   background-color: #f8f9fa;
 }
 
+.clickable:focus {
+  outline: 2px solid #ff5722;
+  outline-offset: 2px;
+}
+
 .disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Focus styles for interactive elements */
+.stat-item:focus {
+  outline: 2px solid #ff5722;
+  outline-offset: 2px;
+  background-color: #f1f3f5;
+}
+
+.message-bubble:focus {
+  outline: 2px solid #ff5722;
+  outline-offset: 2px;
+}
+
+/* Keyboard navigation support */
+[role="button"]:focus {
+  outline: 2px solid #ff5722;
+  outline-offset: 2px;
+}
+
+/* Remove default button focus styling for stat items */
+.stat-item[role="button"] {
+  border: none;
+  background: none;
+  padding: 0.25rem;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  color: inherit;
 }

@@ -20,7 +20,7 @@ export class AuctionEventService {
   private bidAnnouncementCooldown = 5000; // 5 seconds cooldown between bid announcements
   private hasCreditsError = false;
   
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   private auctionState = inject(AuctionStateService);
   private biddingService = inject(BiddingService);
   private voiceService = inject(VoiceService);

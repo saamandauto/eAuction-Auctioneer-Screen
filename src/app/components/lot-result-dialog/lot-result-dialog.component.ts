@@ -14,7 +14,7 @@ import { FormatPricePipe } from '../../pipes/format-price.pipe';
 export class LotResultDialogComponent {
   @Input() isOpen = false;
   @Input() lot: LotDetails | null = null;
-  @Input() onClose: () => void = () => {};
+  @Input() onClose?: () => void; // Made optional, removed empty default function
 
   LotStatus = LotStatus; // Make enum available in template
 
@@ -24,6 +24,13 @@ export class LotResultDialogComponent {
 
   get bids() {
     return this.finalState?.bids || [];
+  }
+
+  // Handle close with proper null checking
+  handleClose(): void {
+    if (this.onClose) {
+      this.onClose();
+    }
   }
 
   getBidderTooltip(bid: Bid): string {

@@ -5,15 +5,13 @@ import { BehaviorSubject, Observable, map, combineLatest } from 'rxjs';
   providedIn: 'root'
 })
 export class AuctionStatsService {
-  // Auction stats
+  // Auction stats - removed type annotations where they can be inferred
   private soldLots$ = new BehaviorSubject<number>(0);
   private withdrawnLots$ = new BehaviorSubject<number>(0);
   private totalSoldValue$ = new BehaviorSubject<number>(0);
   private totalReserveValue$ = new BehaviorSubject<number>(0);
   private auctioneerBidsCount$ = new BehaviorSubject<number>(0);
   private dealerBidsCount$ = new BehaviorSubject<number>(0);
-
-  constructor() {}
 
   // Getter methods for observables
   getSoldLots(): Observable<number> {
@@ -77,7 +75,7 @@ export class AuctionStatsService {
   // Calculate performance metrics
   getPerformanceMetrics(): Observable<{sum: string, percentage: string}> {
     return this.getTotalStats().pipe(
-      map(({soldLots, totalSoldValue, totalReserveValue}) => {
+      map(({totalSoldValue, totalReserveValue, soldLots}) => {
         if (soldLots === 0) {
           return { sum: '-', percentage: '-' };
         }

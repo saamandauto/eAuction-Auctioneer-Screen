@@ -1,11 +1,18 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, BehaviorSubject, combineLatest, map, takeUntil } from 'rxjs';
 import { Dealer, Message, MessageCount, DealerFilter } from '../../models/interfaces';
 import { DisplayDealer } from '../../models/display-interfaces';
 import { LotUserActivityService } from '../../services/lot-user-activity.service';
 import { getDealerName, getDealerId } from '../../utils/dealer-utils';
+
+// Interface for the combined view state
+interface DealersListViewState {
+  displayedDealers: DisplayDealer[];
+  emptyRows: number[];
+  canExpand: boolean;
+}
 
 @Component({
   selector: 'app-dealers-list',
@@ -20,15 +27,42 @@ export class DealersListComponent implements OnInit, OnChanges, OnDestroy {
   @Input() selectedDealer: Dealer | null = null;
   @Output() selectDealer = new EventEmitter<Dealer>();
   
-  expanded = false;
-  searchTerm = '';
-  displayDealers: DisplayDealer[] = [];
+  expanded = false; // Removed ': boolean'
+  searchTerm = ''; // Removed ': string'
   currentFilter: DealerFilter = 'all';
+  
+  // Internal state subjects
+  private displayDealersSubject = new BehaviorSubject<DisplayDealer[]>([]);
+
+  // Combined view state observable
+  viewState$: Observable<DealersListViewState>;
 
   // Destroy subject for subscription management
   private destroy$ = new Subject<void>();
 
-  constructor(private lotUserActivityService: LotUserActivityService) {}
+  // Inject dependencies using inject() pattern
+  private lotUserActivityService = inject(LotUserActivityService);
+
+  constructor() {
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.displayDealersSubject.asObservable()
+    ]).pipe(
+      map(([displayDealers]) => {
+        const displayedDealers = this.expanded ? displayDealers : displayDealers.slice(0, 10);
+        const currentRows = displayedDealers.length;
+        const minRows = this.expanded ? 0 : 10;
+        const emptyRows = currentRows < minRows ? Array(minRows - currentRows).fill(0) : [];
+        
+        return {
+          displayedDealers,
+          emptyRows,
+          canExpand: displayDealers.length > 10
+        };
+      }),
+      takeUntil(this.destroy$)
+    );
+  }
 
   ngOnInit() {
     this.updateDisplayDealers();
@@ -52,7 +86,7 @@ export class DealersListComponent implements OnInit, OnChanges, OnDestroy {
 
   public updateDisplayDealers() {
     if (!this.dealers || this.dealers.length === 0) {
-      this.displayDealers = [];
+      this.displayDealersSubject.next([]);
       return;
     }
     
@@ -106,7 +140,7 @@ export class DealersListComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     // Convert to DisplayDealer with pre-computed data
-    this.displayDealers = dealers.map(dealer => {
+    const displayDealers = dealers.map(dealer => {
       const dealerId = getDealerId(dealer);
       const dealerStatus = this.lotUserActivityService.getDealerStatus(dealerId || '') || {
         dealerId: dealerId || '',
@@ -131,21 +165,13 @@ export class DealersListComponent implements OnInit, OnChanges, OnDestroy {
     });
 
     // Sort alphabetically using name from either format
-    this.displayDealers.sort((a, b) => {
+    displayDealers.sort((a, b) => {
       const nameA = getDealerName(a);
       const nameB = getDealerName(b);
       return nameA.localeCompare(nameB);
     });
-  }
 
-  get displayedDealers(): DisplayDealer[] {
-    return this.expanded ? this.displayDealers : this.displayDealers.slice(0, 10);
-  }
-
-  get emptyRows(): number[] {
-    const currentRows = this.displayedDealers.length;
-    const minRows = this.expanded ? 0 : 10;
-    return currentRows < minRows ? Array(minRows - currentRows).fill(0) : [];
+    this.displayDealersSubject.next(displayDealers);
   }
 
   toggleExpanded() {
@@ -178,6 +204,7 @@ ID: ${dealerId}${lastActive}${lastBuy}${lastLogin}
     };
   }
 
+  // Updated to handle keyboard events
   onDealerClick(dealer: DisplayDealer) {
     this.selectDealer.emit(dealer);
   }

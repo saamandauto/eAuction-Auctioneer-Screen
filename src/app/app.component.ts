@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
+import { Component, OnDestroy, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, Observable, combineLatest, map, takeUntil } from 'rxjs';
@@ -20,7 +20,7 @@ import { AuctionStateService } from './auction/auction-state.service';
 import { LotStatus, HammerState } from './models/enums';
 import { KeyboardShortcutService } from './services/keyboard-shortcut.service';
 import { ToastrService } from 'ngx-toastr';
-import { LotDetails, ViewerInfo } from './models/interfaces';
+import { LotDetails, ViewerInfo, Bid, Dealer, Message } from './models/interfaces'; // Added Message import
 import { LotPerformance } from './models/display-interfaces';
 import { AuctionService } from './services/auction.service';
 import { AuctionLifecycleService } from './services/auction-lifecycle.service';
@@ -29,6 +29,57 @@ import { BiddingOrchestrationService } from './services/bidding-orchestration.se
 import { DialogService } from './services/dialog.service';
 import { MessagingService } from './services/messaging.service';
 import { LotUserActivityService } from './services/lot-user-activity.service';
+
+// Interface for the combined view state
+interface AppViewState {
+  // Auction meta info
+  auctionTitle: string;
+  auctionId: string;
+  auctionDate: string;
+  auctionCompany: string;
+  currentDateTime: string;
+  
+  // Auction state
+  isAuctionStarted: boolean;
+  isViewingLots: boolean;
+  simulatedBiddingEnabled: boolean;
+  
+  // Current lot and status
+  currentLot: LotDetails | null;
+  lotStatus: LotStatus;
+  hammerState: HammerState;
+  canControlLot: boolean;
+  canUseHammer: boolean;
+  skipConfirmations: boolean;
+  
+  // Bidding state
+  currentHighestBid: number | null;
+  highestBid: Bid | null; // Changed from any to Bid | null
+  askingPrice: number;
+  startPrice: number;
+  bidIncrement: number;
+  newBidAmount: number;
+  
+  // Collections
+  lots: LotDetails[];
+  dealers: Dealer[]; // Changed from any[] to Dealer[]
+  messages: Message[]; // Changed from unknown[] to Message[]
+  bids: Bid[]; // Changed from any[] to Bid[]
+  selectedDealer: Dealer | null; // Changed from any to Dealer | null
+  
+  // Dialog states
+  isViewersDialogOpen: boolean;
+  isWatchersDialogOpen: boolean;
+  isLeadsDialogOpen: boolean;
+  isOnlineDialogOpen: boolean;
+  
+  // Computed values
+  hasBids: boolean;
+  
+  // Computed boolean flags for template logic
+  showLandingContent: boolean;
+  showAuctionContent: boolean;
+}
 
 @Component({
   selector: 'app-root',
@@ -53,7 +104,7 @@ import { LotUserActivityService } from './services/lot-user-activity.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnDestroy {
   // Expose enums to the template
   protected readonly LotStatus = LotStatus;
   protected readonly HammerState = HammerState;
@@ -64,6 +115,9 @@ export class AppComponent implements OnInit, OnDestroy {
   // Destroy subject for subscription management
   private destroy$ = new Subject<void>();
   
+  // Combined view state observable
+  viewState$: Observable<AppViewState>;
+  
   // Observable properties for template consumption
   lotPerformance$: Observable<LotPerformance>;
   viewers$: Observable<ViewerInfo[]>;
@@ -71,7 +125,7 @@ export class AppComponent implements OnInit, OnDestroy {
   leads$: Observable<ViewerInfo[]>;
   onlineUsers$: Observable<ViewerInfo[]>;
 
-  // Inject dependencies
+  // Inject dependencies using inject() pattern
   public auctionState = inject(AuctionStateService);
   public lotUserActivityService = inject(LotUserActivityService);
   private auctionEventService = inject(AuctionEventService);
@@ -85,7 +139,91 @@ export class AppComponent implements OnInit, OnDestroy {
   private keyboardShortcutService = inject(KeyboardShortcutService);
 
   constructor() {
-    // Initialize observable properties
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.auctionState.select('auctionTitle'),
+      this.auctionState.select('auctionId'),
+      this.auctionState.select('auctionDate'),
+      this.auctionState.select('auctionCompany'),
+      this.auctionState.select('currentDateTime'),
+      this.auctionState.select('isAuctionStarted'),
+      this.auctionState.select('isViewingLots'),
+      this.auctionState.select('simulatedBiddingEnabled'),
+      this.auctionState.select('currentLot'),
+      this.auctionState.select('lotStatus'),
+      this.auctionState.select('hammerState'),
+      this.auctionState.select('canControlLot'),
+      this.auctionState.select('canUseHammer'),
+      this.auctionState.select('skipConfirmations'),
+      this.auctionState.select('currentHighestBid'),
+      this.auctionState.select('highestBid'),
+      this.auctionState.select('askingPrice'),
+      this.auctionState.select('startPrice'),
+      this.auctionState.select('bidIncrement'),
+      this.auctionState.select('newBidAmount'),
+      this.auctionState.select('lots'),
+      this.auctionState.select('dealers'),
+      this.auctionState.select('messages'),
+      this.auctionState.select('bids'),
+      this.auctionState.select('selectedDealer'),
+      this.auctionState.select('isViewersDialogOpen'),
+      this.auctionState.select('isWatchersDialogOpen'),
+      this.auctionState.select('isLeadsDialogOpen'),
+      this.auctionState.select('isOnlineDialogOpen')
+    ]).pipe(
+      map(([
+        auctionTitle, auctionId, auctionDate, auctionCompany, currentDateTime,
+        isAuctionStarted, isViewingLots, simulatedBiddingEnabled,
+        currentLot, lotStatus, hammerState, canControlLot, canUseHammer, skipConfirmations,
+        currentHighestBid, highestBid, askingPrice, startPrice, bidIncrement, newBidAmount,
+        lots, dealers, messages, bids, selectedDealer,
+        isViewersDialogOpen, isWatchersDialogOpen, isLeadsDialogOpen, isOnlineDialogOpen
+      ]) => {
+        const hasBids = (bids?.length ?? 0) > 0;
+        
+        // Compute boolean flags for template logic
+        const showLandingContent = !isAuctionStarted || isViewingLots;
+        const showAuctionContent = isAuctionStarted && !isViewingLots;
+        
+        return {
+          auctionTitle,
+          auctionId,
+          auctionDate,
+          auctionCompany,
+          currentDateTime,
+          isAuctionStarted,
+          isViewingLots,
+          simulatedBiddingEnabled,
+          currentLot,
+          lotStatus,
+          hammerState,
+          canControlLot,
+          canUseHammer,
+          skipConfirmations,
+          currentHighestBid,
+          highestBid,
+          askingPrice,
+          startPrice,
+          bidIncrement,
+          newBidAmount,
+          lots,
+          dealers,
+          messages,
+          bids,
+          selectedDealer,
+          isViewersDialogOpen,
+          isWatchersDialogOpen,
+          isLeadsDialogOpen,
+          isOnlineDialogOpen,
+          hasBids,
+          showLandingContent,
+          showAuctionContent
+        };
+      }),
+      takeUntil(this.destroy$)
+    );
+
+    // Initialize other observable properties
     this.lotPerformance$ = combineLatest([
       this.auctionState.select('currentHighestBid'),
       this.auctionState.select('currentLot')
@@ -121,10 +259,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnInit(): void {
-    // Initialize auction state if needed
-  }
-  
   ngOnDestroy(): void {
     // Complete the destroy subject to unsubscribe all observables
     this.destroy$.next();
@@ -235,7 +369,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.biddingOrchestrationService.adjustBidIncrement(amount);
   }
   
-  onBidPlaced(bid: any): void {
+  onBidPlaced(bid: Bid): void { // Changed from any to Bid
     this.biddingOrchestrationService.onBidPlaced(bid);
   }
   
@@ -244,12 +378,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
   // Lot selection - delegate to LotManagementService
-  selectLot(lot: any): void {
+  selectLot(lot: LotDetails): void { // Changed from any to LotDetails
     this.lotManagementService.selectLot(lot);
   }
   
   // Dealer messaging - delegate to MessagingService
-  onDealerSelect(dealer: any): void {
+  onDealerSelect(dealer: Dealer | null): void { // Changed from any to Dealer | null
     this.messagingService.onDealerSelect(dealer);
   }
   

@@ -27,18 +27,12 @@ export class KeyboardShortcutService {
     { key: 's', alt: true, description: 'Settings' }
   ];
 
-  constructor() {}
-
   getShortcuts(): KeyboardShortcut[] {
     return this.shortcuts;
   }
 
   getShowShortcutsInUI() {
     return this.showShortcutsInUI.asObservable();
-  }
-
-  toggleShowShortcutsInUI() {
-    this.showShortcutsInUI.next(!this.showShortcutsInUI.value);
   }
 
   setShowShortcutsInUI(show: boolean) {

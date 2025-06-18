@@ -11,69 +11,73 @@
         </div>
       </div>
     </div>
-    <div class="actions">
-      <div class="current-time">{{ currentDateTime }}</div>
-      
-      <!-- Navigation buttons -->
-      <ng-container *ngIf="isAuctionStarted">
-        <button class="button button-view" (click)="onToggleView()">
-          <i [class]="isViewingLots ? 'ri-auction-line' : 'ri-list-check-2'"></i>
-          {{ isViewingLots ? localizationService.getText('components', 'header', 'viewAuction', 'View Auction') : localizationService.getText('components', 'header', 'viewPlannedLots', 'View Planned Lots') }}
+    
+    <!-- Use single async pipe to unwrap the entire view state -->
+    <ng-container *ngIf="viewState$ | async as vm">
+      <div class="actions">
+        <div class="current-time">{{ currentDateTime }}</div>
+        
+        <!-- Navigation buttons -->
+        <ng-container *ngIf="isAuctionStarted">
+          <button class="button button-view" (click)="onToggleView()">
+            <i [class]="isViewingLots ? 'ri-auction-line' : 'ri-list-check-2'"></i>
+            {{ isViewingLots ? localizationService.getText('components', 'header', 'viewAuction', 'View Auction') : localizationService.getText('components', 'header', 'viewPlannedLots', 'View Planned Lots') }}
+          </button>
+          
+          <button class="button button-primary" (click)="onEndAuction()">
+            <i class="ri-stop-circle-line"></i>
+            {{ localizationService.getText('components', 'header', 'endAuction', 'End Auction') }}
+          </button>
+        </ng-container>
+        
+        <button *ngIf="!isAuctionStarted" class="button button-start" (click)="onStartAuction()">
+          <i class="ri-play-circle-line"></i>
+          {{ localizationService.getText('components', 'header', 'startAuction', 'Start Auction') }}
         </button>
         
-        <button class="button button-primary" (click)="onEndAuction()">
-          <i class="ri-stop-circle-line"></i>
-          {{ localizationService.getText('components', 'header', 'endAuction', 'End Auction') }}
-        </button>
-      </ng-container>
-      
-      <button *ngIf="!isAuctionStarted" class="button button-start" (click)="onStartAuction()">
-        <i class="ri-play-circle-line"></i>
-        {{ localizationService.getText('components', 'header', 'startAuction', 'Start Auction') }}
-      </button>
-      
-      <div class="voice-button-container">
-        <button 
-          class="button"
-          [class.button-voice-on]="voiceEnabled && !hasCreditsError"
-          [class.button-voice-off]="!voiceEnabled"
-          [class.button-voice-error]="hasCreditsError"
-          (click)="toggleVoice()"
-          [title]="localizationService.getText('components', 'header', 'toggleVoiceTooltip', 'Toggle Voice Assistant')">
-          <i [class]="voiceEnabled && !hasCreditsError ? 'ri-volume-up-fill' : hasCreditsError ? 'ri-volume-off-fill' : 'ri-volume-mute-fill'"></i>
-          {{ localizationService.getText('components', 'header', 'voice', 'Voice') }}
-        </button>
-        <span class="error-badge" *ngIf="hasCreditsError" [title]="localizationService.getText('components', 'header', 'creditsErrorTooltip', 'ElevenLabs API credits exhausted or API key invalid')">!</span>
-      </div>
-      
-      <div class="voice-button-container">
-        <button 
-          class="button speech-button"
-          [class.speech-active]="isListeningValue"
-          [class.button-voice-on]="isListeningValue"
-          [class.button-voice-off]="!isListeningValue"
-          [title]="localizationService.getText('components', 'header', 'speechRecognitionTooltip', 'Press ALT+T to activate speech recognition')">
-          <div class="mic-container">
-            <i class="mic-icon" [class]="isListeningValue ? 'ri-mic-fill' : 'ri-mic-off-fill'"></i>
-            <div class="sound-wave" *ngIf="isListeningValue">
-              <span class="wave-bar"></span>
-              <span class="wave-bar"></span>
-              <span class="wave-bar"></span>
-              <span class="wave-bar"></span>
+        <div class="voice-button-container">
+          <button 
+            class="button"
+            [class.button-voice-on]="vm.voiceEnabled && !vm.hasCreditsError"
+            [class.button-voice-off]="!vm.voiceEnabled"
+            [class.button-voice-error]="vm.hasCreditsError"
+            (click)="toggleVoice()"
+            [title]="localizationService.getText('components', 'header', 'toggleVoiceTooltip', 'Toggle Voice Assistant')">
+            <i [class]="vm.voiceEnabled && !vm.hasCreditsError ? 'ri-volume-up-fill' : vm.hasCreditsError ? 'ri-volume-off-fill' : 'ri-volume-mute-fill'"></i>
+            {{ localizationService.getText('components', 'header', 'voice', 'Voice') }}
+          </button>
+          <span class="error-badge" *ngIf="vm.hasCreditsError" [title]="localizationService.getText('components', 'header', 'creditsErrorTooltip', 'ElevenLabs API credits exhausted or API key invalid')">!</span>
+        </div>
+        
+        <div class="voice-button-container">
+          <button 
+            class="button speech-button"
+            [class.speech-active]="vm.isListening"
+            [class.button-voice-on]="vm.isListening"
+            [class.button-voice-off]="!vm.isListening"
+            [title]="localizationService.getText('components', 'header', 'speechRecognitionTooltip', 'Press ALT+T to activate speech recognition')">
+            <div class="mic-container">
+              <i class="mic-icon" [class]="vm.isListening ? 'ri-mic-fill' : 'ri-mic-off-fill'"></i>
+              <div class="sound-wave" *ngIf="vm.isListening">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
             </div>
-          </div>
-          <span>{{ localizationService.getText('components', 'header', 'talk', 'Talk') }}</span>
-          <span class="shortcut-hint" *ngIf="showShortcutsInUI">Alt+T</span>
+            <span>{{ localizationService.getText('components', 'header', 'talk', 'Talk') }}</span>
+            <span class="shortcut-hint" *ngIf="vm.showShortcutsInUI">Alt+T</span>
+          </button>
+        </div>
+        
+        <button class="button button-icon" [title]="localizationService.getText('components', 'header', 'settingsTooltip', 'Settings')" (click)="onOpenSettings()">
+          <i class="ri-settings-line"></i>
+        </button>
+        
+        <button class="button button-icon" [title]="localizationService.getText('components', 'header', 'helpTooltip', 'Help')">
+          <i class="ri-question-line"></i>
         </button>
       </div>
-      
-      <button class="button button-icon" [title]="localizationService.getText('components', 'header', 'settingsTooltip', 'Settings')" (click)="onOpenSettings()">
-        <i class="ri-settings-line"></i>
-      </button>
-      
-      <button class="button button-icon" [title]="localizationService.getText('components', 'header', 'helpTooltip', 'Help')">
-        <i class="ri-question-line"></i>
-      </button>
-    </div>
+    </ng-container>
   </div>
 </div>

@@ -1,169 +1,172 @@
 <div class="app-container">
-  <!-- Header -->
-  <app-header
-    [auctionTitle]="(auctionState.select('auctionTitle') | async) ?? ''"
-    [auctionId]="(auctionState.select('auctionId') | async) ?? ''"
-    [auctionDate]="(auctionState.select('auctionDate') | async) ?? ''"
-    [auctionCompany]="(auctionState.select('auctionCompany') | async) ?? ''"
-    [currentDateTime]="(auctionState.select('currentDateTime') | async) ?? ''"
-    [isAuctionStarted]="(auctionState.select('isAuctionStarted') | async) ?? false"
-    [isViewingLots]="(auctionState.select('isViewingLots') | async) ?? true"
-    [simulatedBiddingEnabled]="(auctionState.select('simulatedBiddingEnabled') | async) ?? false"
-    (startAuction)="startAuction()"
-    (endAuction)="endAuction()"
-    (toggleView)="toggleView()"
-    (toggleSimulatedBidding)="toggleSimulatedBidding()"
-    (openSettings)="toggleSettingsPanel()">
-  </app-header>
+  <!-- Use single async pipe to unwrap the entire view state -->
+  <ng-container *ngIf="viewState$ | async as vm">
+    <!-- Header -->
+    <app-header
+      [auctionTitle]="vm.auctionTitle"
+      [auctionId]="vm.auctionId"
+      [auctionDate]="vm.auctionDate"
+      [auctionCompany]="vm.auctionCompany"
+      [currentDateTime]="vm.currentDateTime"
+      [isAuctionStarted]="vm.isAuctionStarted"
+      [isViewingLots]="vm.isViewingLots"
+      [simulatedBiddingEnabled]="vm.simulatedBiddingEnabled"
+      (startAuction)="startAuction()"
+      (endAuction)="endAuction()"
+      (toggleView)="toggleView()"
+      (toggleSimulatedBidding)="toggleSimulatedBidding()"
+      (openSettings)="toggleSettingsPanel()">
+    </app-header>
 
-  <!-- Landing Page or Planned Lots View during auction -->
-  <div class="landing-content" *ngIf="!(auctionState.select('isAuctionStarted') | async) || ((auctionState.select('isAuctionStarted') | async) && (auctionState.select('isViewingLots') | async))">
-    <app-planned-lots 
-      [lots]="(auctionState.select('lots') | async) ?? []" 
-      (lotUpdated)="onLotUpdated($event)"
-      (lotsReordered)="onLotsReordered($event)">
-    </app-planned-lots>
-  </div>
+    <!-- Landing Page or Planned Lots View - using computed boolean flag -->
+    <div class="landing-content" *ngIf="vm.showLandingContent">
+      <app-planned-lots 
+        [lots]="vm.lots" 
+        (lotUpdated)="onLotUpdated($event)"
+        (lotsReordered)="onLotsReordered($event)">
+      </app-planned-lots>
+    </div>
 
-  <!-- Auction Content - Show when auction is started and not viewing lots -->
-  <div class="main-content" *ngIf="(auctionState.select('isAuctionStarted') | async) && !(auctionState.select('isViewingLots') | async)">
-    <div class="left-column">
-      <div class="panel">
-        <div class="lot-header">
-          <div class="lot-info compact">
-            <h2>Lot No. {{ (auctionState.select('currentLot') | async)?.lotNumber }} - {{ (auctionState.select('currentLot') | async)?.make }} {{ (auctionState.select('currentLot') | async)?.model }}</h2>
+    <!-- Auction Content - using computed boolean flag -->
+    <div class="main-content" *ngIf="vm.showAuctionContent">
+      <div class="left-column">
+        <div class="panel">
+          <div class="lot-header">
+            <div class="lot-info compact">
+              <h2>Lot No. {{ vm.currentLot?.lotNumber }} - {{ vm.currentLot?.make }} {{ vm.currentLot?.model }}</h2>
+            </div>
+            <div class="lot-status" [class]="vm.lotStatus?.toLowerCase()">
+              {{ vm.lotStatus }}
+            </div>
           </div>
-          <div class="lot-status" [class]="(auctionState.select('lotStatus') | async)?.toLowerCase()">
-            {{ auctionState.select('lotStatus') | async }}
+
+          <div class="panels-grid">
+            <app-vehicle-details-feature
+              [lot]="vm.currentLot"
+              (viewersClick)="openViewersDialog()"
+              (watchersClick)="openWatchersDialog()"
+              (leadsClick)="openLeadsDialog()"
+              (onlineClick)="openOnlineDialog()">
+            </app-vehicle-details-feature>
+
+            <app-lot-control
+              [lotStatus]="vm.lotStatus"
+              [hammerState]="vm.hammerState"
+              [canControlLot]="vm.canControlLot"
+              [canUseHammer]="vm.canUseHammer"
+              [hasBids]="vm.hasBids"
+              [skipConfirmations]="vm.skipConfirmations"
+              [currentLot]="vm.currentLot"
+              [currentHighestBid]="vm.currentHighestBid"
+              [highestBid]="vm.highestBid"
+              (startLot)="startLot()"
+              (moveLot)="moveLot()"
+              (noSale)="noSale()"
+              (withdrawLot)="withdrawLot()"
+              (markAsSold)="markAsSold()"
+              (progressHammerState)="progressHammerState()">
+            </app-lot-control>
+
+            <app-current-status
+              [lot]="vm.currentLot"
+              [currentHighestBid]="vm.currentHighestBid"
+              [askingPrice]="vm.askingPrice"
+              [startPrice]="vm.startPrice"
+              [lotPerformance]="(lotPerformance$ | async) ?? { value: 0, text: '-' }">
+            </app-current-status>
+
+            <app-bidding
+              [canControlLot]="vm.canControlLot"
+              [startPrice]="vm.startPrice"
+              [currentHighestBid]="vm.currentHighestBid"
+              [askingPrice]="vm.askingPrice"
+              [bidIncrement]="vm.bidIncrement"
+              [newBidAmount]="vm.newBidAmount"
+              [lotStatus]="vm.lotStatus"
+              [currentLot]="vm.currentLot"
+              [dealers]="vm.dealers"
+              [bids]="vm.bids"
+              [simulatedBiddingEnabled]="vm.simulatedBiddingEnabled"
+              (bidPlaced)="onBidPlaced($event)"
+              (askingPriceChanged)="setAskingPrice($event)"
+              (bidIncrementChanged)="adjustBidIncrement($event)"
+              (auctioneerBidCountChanged)="onAuctioneerBidCountChanged()">
+            </app-bidding>
           </div>
         </div>
+      </div>
 
-        <div class="panels-grid">
-          <app-vehicle-details-feature
-            [lot]="auctionState.select('currentLot') | async"
-            (viewersClick)="openViewersDialog()"
-            (watchersClick)="openWatchersDialog()"
-            (leadsClick)="openLeadsDialog()"
-            (onlineClick)="openOnlineDialog()">
-          </app-vehicle-details-feature>
+      <div class="middle-column">
+        <app-bid-history [bids]="vm.bids"></app-bid-history>
+        <app-dealers-list 
+          [dealers]="vm.dealers"
+          [messages]="vm.messages"
+          [selectedDealer]="vm.selectedDealer"
+          (selectDealer)="onDealerSelect($event)">
+        </app-dealers-list>
+      </div>
 
-          <app-lot-control
-            [lotStatus]="(auctionState.select('lotStatus') | async) ?? LotStatus.PENDING"
-            [hammerState]="(auctionState.select('hammerState') | async) ?? HammerState.ACCEPTING_BIDS"
-            [canControlLot]="(auctionState.select('canControlLot') | async) ?? false"
-            [canUseHammer]="(auctionState.select('canUseHammer') | async) ?? false"
-            [hasBids]="((auctionState.select('bids') | async)?.length ?? 0) > 0"
-            [skipConfirmations]="(auctionState.select('skipConfirmations') | async) ?? false"
-            [currentLot]="auctionState.select('currentLot') | async"
-            [currentHighestBid]="auctionState.select('currentHighestBid') | async"
-            [highestBid]="auctionState.select('highestBid') | async"
-            (startLot)="startLot()"
-            (moveLot)="moveLot()"
-            (noSale)="noSale()"
-            (withdrawLot)="withdrawLot()"
-            (markAsSold)="markAsSold()"
-            (progressHammerState)="progressHammerState()">
-          </app-lot-control>
+      <div class="right-panels">
+        <app-auction-details-feature></app-auction-details-feature>
+        <app-messaging 
+          [dealers]="vm.dealers"
+          [messages]="vm.messages"
+          [selectedDealer]="vm.selectedDealer"
+          (sendMessage)="onSendMessage($event)"
+          (selectDealer)="onDealerSelect($event)">
+        </app-messaging>
+      </div>
 
-          <app-current-status
-            [lot]="auctionState.select('currentLot') | async"
-            [currentHighestBid]="auctionState.select('currentHighestBid') | async"
-            [askingPrice]="(auctionState.select('askingPrice') | async) ?? 0"
-            [startPrice]="(auctionState.select('startPrice') | async) ?? 0"
-            [lotPerformance]="(lotPerformance$ | async) ?? { value: 0, text: '-' }">
-          </app-current-status>
-
-          <app-bidding
-            [canControlLot]="(auctionState.select('canControlLot') | async) ?? false"
-            [startPrice]="(auctionState.select('startPrice') | async) ?? 0"
-            [currentHighestBid]="auctionState.select('currentHighestBid') | async"
-            [askingPrice]="(auctionState.select('askingPrice') | async) ?? 0"
-            [bidIncrement]="(auctionState.select('bidIncrement') | async) ?? 0"
-            [newBidAmount]="(auctionState.select('newBidAmount') | async) ?? 0"
-            [lotStatus]="(auctionState.select('lotStatus') | async) ?? LotStatus.PENDING"
-            [currentLot]="auctionState.select('currentLot') | async"
-            [dealers]="(auctionState.select('dealers') | async) ?? []"
-            [bids]="(auctionState.select('bids') | async) ?? []"
-            [simulatedBiddingEnabled]="(auctionState.select('simulatedBiddingEnabled') | async) ?? false"
-            (bidPlaced)="onBidPlaced($event)"
-            (askingPriceChanged)="setAskingPrice($event)"
-            (bidIncrementChanged)="adjustBidIncrement($event)"
-            (auctioneerBidCountChanged)="onAuctioneerBidCountChanged()">
-          </app-bidding>
-        </div>
+      <div class="lots-column">
+        <app-lots-list 
+          [lots]="vm.lots"
+          [currentLotStatus]="vm.lotStatus"
+          (selectLot)="selectLot($event)">
+        </app-lots-list>
       </div>
     </div>
 
-    <div class="middle-column">
-      <app-bid-history [bids]="(auctionState.select('bids') | async) ?? []"></app-bid-history>
-      <app-dealers-list 
-        [dealers]="(auctionState.select('dealers') | async) ?? []"
-        [messages]="(auctionState.select('messages') | async) ?? []"
-        [selectedDealer]="auctionState.select('selectedDealer') | async"
-        (selectDealer)="onDealerSelect($event)">
-      </app-dealers-list>
-    </div>
+    <!-- User List Dialogs -->
+    <app-user-list-dialog
+      [isOpen]="vm.isViewersDialogOpen"
+      [users]="(viewers$ | async) ?? []"
+      [type]="'Viewer'"
+      [title]="'Current Viewers'"
+      [description]="'A viewer is a dealer who has viewed the detail page of this lot.'"
+      (dialogClose)="closeViewersDialog()">
+    </app-user-list-dialog>
 
-    <div class="right-panels">
-      <app-auction-details-feature></app-auction-details-feature>
-      <app-messaging 
-        [dealers]="(auctionState.select('dealers') | async) ?? []"
-        [messages]="(auctionState.select('messages') | async) ?? []"
-        [selectedDealer]="auctionState.select('selectedDealer') | async"
-        (sendMessage)="onSendMessage($event)"
-        (selectDealer)="onDealerSelect($event)">
-      </app-messaging>
-    </div>
+    <app-user-list-dialog
+      [isOpen]="vm.isWatchersDialogOpen"
+      [users]="(watchers$ | async) ?? []"
+      [type]="'Watcher'"
+      [title]="'Watchers'"
+      [description]="'A watcher is a dealer who has marked this lot as a favorite.'"
+      (dialogClose)="closeWatchersDialog()">
+    </app-user-list-dialog>
 
-    <div class="lots-column">
-      <app-lots-list 
-        [lots]="(auctionState.select('lots') | async) ?? []"
-        [currentLotStatus]="(auctionState.select('lotStatus') | async) ?? LotStatus.PENDING"
-        (selectLot)="selectLot($event)">
-      </app-lots-list>
-    </div>
-  </div>
+    <app-user-list-dialog
+      [isOpen]="vm.isLeadsDialogOpen"
+      [users]="(leads$ | async) ?? []"
+      [type]="'Lead'"
+      [title]="'Leads'"
+      [description]="'A lead is a dealer who has expressed interest in this lot and is on the lead list.'"
+      (dialogClose)="closeLeadsDialog()">
+    </app-user-list-dialog>
 
-  <!-- Settings Panel -->
+    <app-user-list-dialog
+      [isOpen]="vm.isOnlineDialogOpen"
+      [users]="(onlineUsers$ | async) ?? []"
+      [type]="'Online'"
+      [title]="'Online Users'"
+      [description]="'These dealers are currently online and viewing this lot.'"
+      (dialogClose)="closeOnlineDialog()">
+    </app-user-list-dialog>
+  </ng-container>
+
+  <!-- Settings Panel (outside the main state container since it has its own state) -->
   <app-settings-panel
     [isOpen]="isSettingsPanelOpen"
-    (close)="closeSettingsPanel()">
+    (panelClose)="closeSettingsPanel()">
   </app-settings-panel>
-
-  <!-- User List Dialogs -->
-  <app-user-list-dialog
-    [isOpen]="(auctionState.select('isViewersDialogOpen') | async) ?? false"
-    [users]="(viewers$ | async) ?? []"
-    [type]="'Viewer'"
-    [title]="'Current Viewers'"
-    [description]="'A viewer is a dealer who has viewed the detail page of this lot.'"
-    (close)="closeViewersDialog()">
-  </app-user-list-dialog>
-
-  <app-user-list-dialog
-    [isOpen]="(auctionState.select('isWatchersDialogOpen') | async) ?? false"
-    [users]="(watchers$ | async) ?? []"
-    [type]="'Watcher'"
-    [title]="'Watchers'"
-    [description]="'A watcher is a dealer who has marked this lot as a favorite.'"
-    (close)="closeWatchersDialog()">
-  </app-user-list-dialog>
-
-  <app-user-list-dialog
-    [isOpen]="(auctionState.select('isLeadsDialogOpen') | async) ?? false"
-    [users]="(leads$ | async) ?? []"
-    [type]="'Lead'"
-    [title]="'Leads'"
-    [description]="'A lead is a dealer who has expressed interest in this lot and is on the lead list.'"
-    (close)="closeLeadsDialog()">
-  </app-user-list-dialog>
-
-  <app-user-list-dialog
-    [isOpen]="(auctionState.select('isOnlineDialogOpen') | async) ?? false"
-    [users]="(onlineUsers$ | async) ?? []"
-    [type]="'Online'"
-    [title]="'Online Users'"
-    [description]="'These dealers are currently online and viewing this lot.'"
-    (close)="closeOnlineDialog()">
-  </app-user-list-dialog>
 </div>

@@ -12,7 +12,7 @@ import { FormatPricePipe } from '../../pipes/format-price.pipe';
 })
 export class BidHistoryComponent {
   @Input() bids: Bid[] = [];
-  expanded = false;
+  expanded = false; // Removed ': boolean'
 
   get displayedBids(): Bid[] {
     return this.expanded ? this.bids : this.bids.slice(0, 10);

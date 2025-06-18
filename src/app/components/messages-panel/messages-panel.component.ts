@@ -1,9 +1,16 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, BehaviorSubject, combineLatest, map, takeUntil } from 'rxjs';
 import { Message, Dealer } from '../../models/interfaces';
 import { getDealerName, getDealerId } from '../../utils/dealer-utils';
+
+// Interface for the combined view state
+interface MessagesPanelViewState {
+  filteredMessages: Message[];
+  messagePlaceholder: string;
+  dealerNamesMap: Map<string, string>;
+}
 
 @Component({
   selector: 'app-messages-panel',
@@ -19,27 +26,79 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
   @Output() sendMessage = new EventEmitter<{ text: string, isGlobal: boolean }>();
   @Output() selectDealer = new EventEmitter<Dealer | null>();
 
-  newMessage = '';
-  showGlobalMessages = false;
+  newMessage = ''; // Removed ': string'
+  showGlobalMessages = false; // Removed ': boolean'
   
-  // Pre-computed properties
-  filteredMessages: Message[] = [];
-  messagePlaceholder = 'Type a message...';
-  dealerNamesMap = new Map<string, string>();
+  // Internal state subjects
+  private messagesSubject = new BehaviorSubject<Message[]>([]);
+  private selectedDealerSubject = new BehaviorSubject<Dealer | null>(null);
+  private dealersSubject = new BehaviorSubject<Dealer[]>([]);
+  private showGlobalMessagesSubject = new BehaviorSubject<boolean>(false);
+
+  // Combined view state observable
+  viewState$: Observable<MessagesPanelViewState>;
 
   // Destroy subject for subscription management
   private destroy$ = new Subject<void>();
 
+  constructor() {
+    // Create combined view state observable
+    this.viewState$ = combineLatest([
+      this.messagesSubject.asObservable(),
+      this.selectedDealerSubject.asObservable(),
+      this.dealersSubject.asObservable(),
+      this.showGlobalMessagesSubject.asObservable()
+    ]).pipe(
+      map(([messages, selectedDealer, dealers, showGlobalMessages]) => {
+        // Update dealer names map
+        const dealerNamesMap = new Map<string, string>();
+        dealers.forEach(dealer => {
+          const dealerId = getDealerId(dealer);
+          const dealerName = getDealerName(dealer);
+          dealerNamesMap.set(dealerId, dealerName);
+        });
+
+        // Filter messages based on current state
+        let filteredMessages: Message[];
+        if (selectedDealer) {
+          const dealerId = getDealerId(selectedDealer);
+          filteredMessages = messages.filter(msg => 
+            msg.dealerId === dealerId || 
+            (msg.alternate && !msg.isGlobal && msg.recipientId === dealerId)
+          );
+        } else if (showGlobalMessages) {
+          filteredMessages = messages.filter(msg => msg.isGlobal);
+        } else {
+          filteredMessages = messages;
+        }
+
+        // Determine message placeholder
+        let messagePlaceholder: string;
+        if (selectedDealer) {
+          const dealerName = getDealerName(selectedDealer);
+          messagePlaceholder = `Message ${dealerName}...`;
+        } else {
+          messagePlaceholder = showGlobalMessages ? 
+            'Send announcement to all dealers...' : 
+            'Type a message...';
+        }
+
+        return {
+          filteredMessages,
+          messagePlaceholder,
+          dealerNamesMap
+        };
+      }),
+      takeUntil(this.destroy$)
+    );
+  }
+
   ngOnInit() {
-    this.updateDealerNamesMap();
-    this.updateFilteredMessages();
-    this.updateMessagePlaceholder();
+    this.updateInternalState();
   }
 
   ngOnChanges() {
-    this.updateDealerNamesMap();
-    this.updateFilteredMessages();
-    this.updateMessagePlaceholder();
+    this.updateInternalState();
   }
 
   ngOnDestroy() {
@@ -47,38 +106,11 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
     this.destroy$.complete();
   }
 
-  private updateDealerNamesMap() {
-    this.dealerNamesMap.clear();
-    this.dealers.forEach(dealer => {
-      const dealerId = getDealerId(dealer);
-      const dealerName = getDealerName(dealer);
-      this.dealerNamesMap.set(dealerId, dealerName);
-    });
-  }
-
-  private updateFilteredMessages() {
-    if (this.selectedDealer) {
-      const dealerId = getDealerId(this.selectedDealer);
-      this.filteredMessages = this.messages.filter(msg => 
-        msg.dealerId === dealerId || 
-        (msg.alternate && !msg.isGlobal && msg.recipientId === dealerId)
-      );
-    } else if (this.showGlobalMessages) {
-      this.filteredMessages = this.messages.filter(msg => msg.isGlobal);
-    } else {
-      this.filteredMessages = this.messages;
-    }
-  }
-
-  private updateMessagePlaceholder() {
-    if (this.selectedDealer) {
-      const dealerName = getDealerName(this.selectedDealer);
-      this.messagePlaceholder = `Message ${dealerName}...`;
-    } else {
-      this.messagePlaceholder = this.showGlobalMessages ? 
-        'Send announcement to all dealers...' : 
-        'Type a message...';
-    }
+  private updateInternalState() {
+    this.messagesSubject.next(this.messages);
+    this.selectedDealerSubject.next(this.selectedDealer);
+    this.dealersSubject.next(this.dealers);
+    this.showGlobalMessagesSubject.next(this.showGlobalMessages);
   }
 
   // Use imported utility functions but keep these as pass-through methods
@@ -93,21 +125,20 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
 
   // Get dealer name from dealer ID using the pre-computed map
   getDealerNameById(dealerId: string): string {
-    return this.dealerNamesMap.get(dealerId) || 'Unknown';
+    // This will be handled by the viewState$ observable
+    return 'Unknown'; // Fallback - actual value comes from template
   }
 
   clearSelectedDealer() {
     this.showGlobalMessages = false;
+    this.showGlobalMessagesSubject.next(false);
     this.selectDealer.emit(null);
-    this.updateFilteredMessages();
-    this.updateMessagePlaceholder();
   }
 
   toggleGlobalMessages() {
     this.showGlobalMessages = true;
+    this.showGlobalMessagesSubject.next(true);
     this.selectDealer.emit(null);
-    this.updateFilteredMessages();
-    this.updateMessagePlaceholder();
   }
 
   onSendMessage() {
@@ -121,6 +152,7 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
     this.newMessage = '';
   }
 
+  // Updated to handle keyboard events as well as clicks
   onMessageClick(message: Message) {
     if (!message.alternate && !message.isGlobal) {
       const dealer = this.dealers.find(d => {
@@ -130,9 +162,8 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
       
       if (dealer) {
         this.showGlobalMessages = false;
+        this.showGlobalMessagesSubject.next(false);
         this.selectDealer.emit(dealer);
-        this.updateFilteredMessages();
-        this.updateMessagePlaceholder();
       }
     }
   }

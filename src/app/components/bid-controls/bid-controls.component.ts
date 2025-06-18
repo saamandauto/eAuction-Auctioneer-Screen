@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, HostListener, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { LotStatus } from '../../models/enums';
 import { Bid, Dealer, LotDetails } from '../../models/interfaces';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
@@ -13,7 +14,7 @@ import { LocalizationService } from '../../services/localization.service';
   templateUrl: './bid-controls.component.html',
   styleUrls: ['./bid-controls.component.scss']
 })
-export class BidControlsComponent {
+export class BidControlsComponent implements OnInit, OnDestroy {
   @Input() canControlLot = false;
   @Input() startPrice = 0;
   @Input() currentHighestBid: number | null = null;
@@ -36,15 +37,26 @@ export class BidControlsComponent {
   userInputModified = false;
   localAskingPrice = 0;
   showShortcutsInUI = false;
+  
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
 
   // Inject dependencies
   private keyboardShortcutService = inject(KeyboardShortcutService);
   public localizationService = inject(LocalizationService);
 
-  constructor() {
-    this.keyboardShortcutService.getShowShortcutsInUI().subscribe(show => {
-      this.showShortcutsInUI = show;
-    });
+  ngOnInit() {
+    // Subscribe to show shortcuts setting
+    this.keyboardShortcutService.getShowShortcutsInUI()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(show => {
+        this.showShortcutsInUI = show;
+      });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -77,6 +89,7 @@ export class BidControlsComponent {
     }
   }
 
+  // Computed properties using getters for reactivity
   get isActive(): boolean {
     return this.lotStatus === LotStatus.ACTIVE;
   }

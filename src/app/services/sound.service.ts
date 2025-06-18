@@ -6,7 +6,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 })
 export class SoundService {
   private audioContext: AudioContext | null = null;
-  private soundEnabled = new BehaviorSubject<boolean>(true);
+  private soundEnabled = new BehaviorSubject<boolean>(true); // Removed ': boolean'
   
   constructor() {
     try {

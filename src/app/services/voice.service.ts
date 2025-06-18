@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../environments/environment';
@@ -12,7 +12,7 @@ export class VoiceService {
   private audioContext: AudioContext | null = null;
   private voiceEnabled = new BehaviorSubject<boolean>(false);
   private hasCreditsError = new BehaviorSubject<boolean>(false);
-  private audioQueue: Array<{ text: string, playAfter?: string }> = [];
+  private audioQueue: { text: string; playAfter?: string }[] = []; // Fixed: Array<> to []
   private isPlaying = false;
   private maxRetries = 2;
   private lastSpokenMessage = '';
@@ -23,11 +23,12 @@ export class VoiceService {
   private hasShownActivationToast = false;
   private selectedVoice = new BehaviorSubject<string>('21m00Tcm4TlvDq8ikWAM');
 
-  constructor(
-    private toastr: ToastrService,
-    private supabaseService: SupabaseService,
-    private localizationService: LocalizationService
-  ) {
+  // Inject dependencies using inject() pattern
+  private toastr = inject(ToastrService);
+  private supabaseService = inject(SupabaseService);
+  private localizationService = inject(LocalizationService);
+
+  constructor() {
     // Initialize AudioContext when service is created
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -204,7 +205,7 @@ export class VoiceService {
     }
   }
   
-  private isCreditsError(error: any): boolean {
+  private isCreditsError(error: unknown): boolean {
     const errorMsg = this.getErrorMessage(error);
     return errorMsg.includes('authentication failed') || 
            errorMsg.includes('API key') || 

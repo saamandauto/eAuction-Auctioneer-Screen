@@ -1,7 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, combineLatest, map, takeUntil } from 'rxjs';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
 import { VoiceService } from '../../services/voice.service';
 import { SpeechRecognitionService } from '../../services/speech-recognition.service';
@@ -9,6 +9,18 @@ import { SoundService } from '../../services/sound.service';
 import { AuctionStateService } from '../../auction/auction-state.service';
 import { SeedService } from '../../services/seed.service';
 import { LocalizationService, LanguageOption, CurrencyOption } from '../../services/localization.service';
+
+// Interface for the combined view state
+interface SettingsViewState {
+  showShortcutsInUI: boolean;
+  voiceEnabled: boolean;
+  soundEnabled: boolean;
+  simulatedBiddingEnabled: boolean;
+  skipConfirmations: boolean;
+  hammerRequiresReserveMet: boolean;
+  currentLocale: string;
+  selectedCurrencyCode: string;
+}
 
 @Component({
   selector: 'app-settings-panel',
@@ -19,14 +31,11 @@ import { LocalizationService, LanguageOption, CurrencyOption } from '../../servi
 })
 export class SettingsPanelComponent implements OnInit, OnDestroy {
   @Input() isOpen = false;
-  @Output() close = new EventEmitter<void>();
+  @Output() panelClose = new EventEmitter<void>(); // Renamed from 'close'
   
-  showShortcutsInUI = false;
-  voiceEnabled = false;
-  soundEnabled = true;
-  simulatedBiddingEnabled = false;
-  skipConfirmations = false;
-  hammerRequiresReserveMet = false;
+  // Combined view state observable
+  viewState$: Observable<SettingsViewState>;
+  
   speechRecognitionSensitivity = 0.5;
   activeTab = 'general';
   availableVoices = [
@@ -45,59 +54,59 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
   
   // Localization settings
   availableLanguages: LanguageOption[] = [];
-  currentLocale = 'en_GB';
   availableCurrencies: CurrencyOption[] = [];
-  selectedCurrencyCode = 'GBP';
 
   // Destroy subject for subscription management
   private destroy$ = new Subject<void>();
   
-  constructor(
-    private keyboardShortcutService: KeyboardShortcutService,
-    private voiceService: VoiceService,
-    private speechRecognitionService: SpeechRecognitionService,
-    private soundService: SoundService,
-    private auctionState: AuctionStateService,
-    private seedService: SeedService,
-    public localizationService: LocalizationService
-  ) {
+  // Inject dependencies using inject() pattern
+  private keyboardShortcutService = inject(KeyboardShortcutService);
+  private voiceService = inject(VoiceService);
+  private speechRecognitionService = inject(SpeechRecognitionService);
+  private soundService = inject(SoundService);
+  private auctionState = inject(AuctionStateService);
+  private seedService = inject(SeedService);
+  public localizationService = inject(LocalizationService);
+
+  constructor() {
+    // Create combined view state observable in constructor
+    this.viewState$ = combineLatest([
+      this.keyboardShortcutService.getShowShortcutsInUI(),
+      this.voiceService.getVoiceEnabled(),
+      this.soundService.getSoundEnabled(),
+      this.auctionState.getSimulatedBiddingEnabledObservable(),
+      this.auctionState.getSkipConfirmationsObservable(),
+      this.auctionState.select('hammerRequiresReserveMet'),
+      this.localizationService.getCurrentLocale(),
+      this.localizationService.getCurrentCurrency()
+    ]).pipe(
+      map(([
+        showShortcutsInUI,
+        voiceEnabled,
+        soundEnabled,
+        simulatedBiddingEnabled,
+        skipConfirmations,
+        hammerRequiresReserveMet,
+        currentLocale,
+        selectedCurrencyCode
+      ]) => ({
+        showShortcutsInUI,
+        voiceEnabled,
+        soundEnabled,
+        simulatedBiddingEnabled,
+        skipConfirmations,
+        hammerRequiresReserveMet,
+        currentLocale,
+        selectedCurrencyCode
+      })),
+      takeUntil(this.destroy$)
+    );
+  }
+
+  ngOnInit() {
     // Initialize localization settings
     this.availableLanguages = this.localizationService.availableLanguages;
     this.availableCurrencies = this.localizationService.availableCurrencies;
-  }
-  
-  ngOnInit() {
-    this.keyboardShortcutService.getShowShortcutsInUI()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(show => this.showShortcutsInUI = show);
-    
-    this.voiceService.getVoiceEnabled()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(enabled => this.voiceEnabled = enabled);
-    
-    this.soundService.getSoundEnabled()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(enabled => this.soundEnabled = enabled);
-    
-    this.auctionState.getSimulatedBiddingEnabledObservable()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(enabled => this.simulatedBiddingEnabled = enabled);
-    
-    this.auctionState.getSkipConfirmationsObservable()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(skip => this.skipConfirmations = skip);
-    
-    this.auctionState.select('hammerRequiresReserveMet')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(required => this.hammerRequiresReserveMet = required);
-    
-    this.localizationService.getCurrentLocale()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(locale => this.currentLocale = locale);
-    
-    this.localizationService.getCurrentCurrency()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(currency => this.selectedCurrencyCode = currency);
   }
 
   ngOnDestroy() {
@@ -105,28 +114,28 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
   
-  onToggleShowShortcuts() {
-    this.keyboardShortcutService.setShowShortcutsInUI(this.showShortcutsInUI);
+  onToggleShowShortcuts(value: boolean) {
+    this.keyboardShortcutService.setShowShortcutsInUI(value);
   }
   
   onToggleVoice() {
     this.voiceService.toggleVoice();
   }
   
-  onToggleSound() {
-    this.soundService.setSoundEnabled(this.soundEnabled);
+  onToggleSound(value: boolean) {
+    this.soundService.setSoundEnabled(value);
   }
   
-  onToggleSimulatedBidding() {
-    this.auctionState.setSimulatedBiddingEnabled(this.simulatedBiddingEnabled);
+  onToggleSimulatedBidding(value: boolean) {
+    this.auctionState.setSimulatedBiddingEnabled(value);
   }
   
-  onToggleSkipConfirmations() {
-    this.auctionState.setSkipConfirmations(this.skipConfirmations);
+  onToggleSkipConfirmations(value: boolean) {
+    this.auctionState.setSkipConfirmations(value);
   }
   
-  onToggleHammerRequiresReserveMet() {
-    this.auctionState.setState({ hammerRequiresReserveMet: this.hammerRequiresReserveMet });
+  onToggleHammerRequiresReserveMet(value: boolean) {
+    this.auctionState.setState({ hammerRequiresReserveMet: value });
   }
   
   onSpeechRecognitionSensitivityChanged() {
@@ -137,12 +146,12 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.voiceService.setSelectedVoice(this.selectedVoice);
   }
 
-  onLanguageChange() {
-    this.localizationService.setLocale(this.currentLocale);
+  onLanguageChange(value: string) {
+    this.localizationService.setLocale(value);
   }
 
-  onCurrencyChange() {
-    this.localizationService.setCurrentCurrency(this.selectedCurrencyCode);
+  onCurrencyChange(value: string) {
+    this.localizationService.setCurrentCurrency(value);
   }
 
   onSeedAuctionData() {
@@ -234,6 +243,6 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
   }
   
   onClose() {
-    this.close.emit();
+    this.panelClose.emit();
   }
 }
