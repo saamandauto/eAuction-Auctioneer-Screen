@@ -132,8 +132,9 @@ export class DealerService {
           console.info('No dealers found in database, using fallback data');
           databaseDealers = [...this.fallbackDealers, ...this.mockBidUsers];
         } else {
-          // Combine database dealers with mock bid users
-          databaseDealers = [...data, ...this.mockBidUsers];
+          // Cast data to DatabaseDealer[] and combine with mock bid users
+          const dbDealers = data as DatabaseDealer[];
+          databaseDealers = [...dbDealers, ...this.mockBidUsers];
         }
         
         // Transform all DatabaseDealer objects to unified Dealer format

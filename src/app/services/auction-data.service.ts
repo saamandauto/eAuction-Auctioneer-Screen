@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, map, catchError, of, tap } from 'rxjs';
 import { SupabaseService } from './supabase.service';
-import { AuctionData } from '../models/interfaces';
+import { AuctionData, DatabaseAuction } from '../models/interfaces';
 import { ToastrService } from 'ngx-toastr';
 
 @Injectable({
@@ -46,8 +46,9 @@ export class AuctionDataService {
           return this.defaultAuction;
         }
         
-        // Map the database fields (snake_case) to the interface fields (camelCase)
-        const auction = data[0];
+        // Cast data to DatabaseAuction[] and map the database fields (snake_case) to the interface fields (camelCase)
+        const dbAuctions = data as DatabaseAuction[];
+        const auction = dbAuctions[0];
         return {
           id: auction.id,
           auctionTitle: auction.auction_title,
@@ -96,8 +97,9 @@ export class AuctionDataService {
           throw new Error('No data returned after saving auction');
         }
         
-        // Map back to camelCase
-        const savedAuction = data[0];
+        // Cast data to DatabaseAuction[] and map back to camelCase
+        const dbAuctions = data as DatabaseAuction[];
+        const savedAuction = dbAuctions[0];
         return {
           id: savedAuction.id,
           auctionTitle: savedAuction.auction_title,

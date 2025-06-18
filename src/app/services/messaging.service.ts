@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AuctionStateService } from '../auction/auction-state.service';
 import { AuctionService } from './auction.service';
 import { SupabaseService } from './supabase.service';
-import { Dealer, Message } from '../models/interfaces';
+import { Dealer, Message, DatabaseMessage } from '../models/interfaces';
 import { Observable, from, map, catchError, of, tap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { getDealerId } from '../utils/dealer-utils';
@@ -71,8 +71,9 @@ export class MessagingService {
           return [];
         }
         
-        // Map the database fields (snake_case) to the interface fields (camelCase)
-        return data.map(message => ({
+        // Cast data to DatabaseMessage[] and map the database fields (snake_case) to the interface fields (camelCase)
+        const dbMessages = data as DatabaseMessage[];
+        return dbMessages.map(message => ({
           id: message.id,
           text: message.text,
           time: message.time,

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, catchError, of, tap, map, throwError, switchMap, forkJoin } from 'rxjs';
 import { SupabaseService } from './supabase.service';
-import { LotDetails, LotStatus, Bid, LotFinalState, ViewerInfo } from '../models/interfaces';
+import { LotDetails, LotStatus, Bid, LotFinalState, ViewerInfo, DatabaseLot, DatabaseLotFinalState, DatabaseLotBid, DatabaseLotUserActivity } from '../models/interfaces';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -39,8 +39,9 @@ export class LotService {
           return [];
         }
 
-        // Map the database field names (snake_case) to the interface field names (camelCase)
-        return data.map(lot => this.mapDbLotToLotDetails(lot));
+        // Cast data to DatabaseLot[] and map the database field names (snake_case) to the interface field names (camelCase)
+        const dbLots = data as DatabaseLot[];
+        return dbLots.map(lot => this.mapDbLotToLotDetails(lot));
       }),
       catchError(err => {
         // Return an empty array on error
@@ -93,8 +94,9 @@ export class LotService {
           return [];
         }
         
-        // Map database fields to ViewerInfo interface
-        return data.map(item => ({
+        // Cast data to DatabaseLotUserActivity[] and map database fields to ViewerInfo interface
+        const dbActivities = data as DatabaseLotUserActivity[];
+        return dbActivities.map(item => ({
           name: item.dealer_name,
           dealerId: item.dealer_id,
           type: item.dealer_type,
@@ -154,7 +156,9 @@ export class LotService {
           throw new Error(`No lot found with lot number ${lot.lotNumber}`);
         }
         
-        return this.mapDbLotToLotDetails(data[0]);
+        // Cast data to DatabaseLot[] and map to LotDetails
+        const dbLots = data as DatabaseLot[];
+        return this.mapDbLotToLotDetails(dbLots[0]);
       }),
       catchError(err => {
         return throwError(() => new Error(`Failed to update lot in Supabase: ${err.message}`));
@@ -203,13 +207,15 @@ export class LotService {
           return throwError(() => new Error('No final state data returned after insert'));
         }
         
-        const finalStateId = finalStateData[0].id;
+        // Cast finalStateData to DatabaseLotFinalState[]
+        const dbFinalStates = finalStateData as DatabaseLotFinalState[];
+        const finalStateId = dbFinalStates[0].id;
         
         // Now save all the bids
         if (finalState.bids && finalState.bids.length > 0) {
           
           // Prepare all bids for batch insert
-          const dbBids = finalState.bids.map(bid => ({
+          const dbBids: Partial<DatabaseLotBid>[] = finalState.bids.map(bid => ({
             lot_final_state_id: finalStateId,
             bidder: bid.bidder,
             bidder_id: bid.bidderId,
@@ -356,7 +362,7 @@ export class LotService {
    * @param dbLot The database lot object
    * @returns A LotDetails object
    */
-  private mapDbLotToLotDetails(dbLot: any): LotDetails {
+  private mapDbLotToLotDetails(dbLot: DatabaseLot): LotDetails {
     // First map the basic lot properties
     const lotDetails: LotDetails = {
       lotNumber: dbLot.lot_number,
@@ -382,7 +388,7 @@ export class LotService {
     
     // Now handle the final state if present
     if (dbLot.lot_final_states && dbLot.lot_final_states.length > 0) {
-      const finalStateData = dbLot.lot_final_states[0];
+      const finalStateData = dbLot.lot_final_states[0] as DatabaseLotFinalState;
       
       // Create the final state object
       const finalState: LotFinalState = {
@@ -434,7 +440,9 @@ export class LotService {
           return [];
         }
         
-        return data.map(bid => ({
+        // Cast data to DatabaseLotBid[] and map to Bid objects
+        const dbBids = data as DatabaseLotBid[];
+        return dbBids.map(bid => ({
           bidder: bid.bidder,
           bidderId: bid.bidder_id,
           amount: bid.amount,

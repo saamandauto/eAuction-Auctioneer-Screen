@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, from, map, catchError, of, tap } from 'rxj
 import { SupabaseService } from './supabase.service';
 import { AuctionDataService } from './auction-data.service';
 import { ToastrService } from 'ngx-toastr';
+import { DatabaseContent } from '../models/interfaces';
 
 export interface LocalizedContent {
   system: number;
@@ -269,8 +270,9 @@ export class LocalizationService {
         }
         return data || [];
       }),
-      tap(content => {
-        // Clear existing cache for this locale
+      tap(data => {
+        // Cast data to DatabaseContent[] and clear existing cache for this locale
+        const content = data as DatabaseContent[];
         this.clearCacheForLocale();
         
         // Populate cache with new content

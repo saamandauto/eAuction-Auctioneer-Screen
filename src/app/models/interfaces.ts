@@ -2,24 +2,9 @@ import { LotStatus } from './enums';
 
 export { LotStatus } from './enums';
 
-// Unified dealer interface that the application will use
-export interface BaseDealer {
-  id: string; // Standardized ID field
-  firstName: string;
-  lastName: string;
-  fullName: string; // Computed full name
-  phone?: string;
-  mobilePhone?: string;
-  note?: string;
-  lastLogin?: string;
-  lastBidDate?: string;
-  lastBuy?: string;
-  type: string;
-  companyName?: string;
-  companyType?: string;
-  city?: string;
-  country?: string;
-}
+// ============================================
+// DATABASE INTERFACES (snake_case, as they come from Supabase)
+// ============================================
 
 // Database dealer interface that matches the Supabase structure
 export interface DatabaseDealer {
@@ -34,6 +19,139 @@ export interface DatabaseDealer {
   LASTBIDDATE?: string | null;
   LASTBUY?: string | null;
   TYPE?: string;
+  companyName?: string;
+  companyType?: string;
+  city?: string;
+  country?: string;
+}
+
+// Database lot interface matching Supabase lots table
+export interface DatabaseLot {
+  lot_number: number;
+  make: string;
+  model: string;
+  year: number;
+  transmission: string;
+  fuel: string;
+  color: string;
+  mileage: number;
+  location: string;
+  registration: string;
+  reserve_price: number;
+  initial_asking_price: number;
+  last_auction_bid?: number;
+  indicata_market_price?: number;
+  viewers: number;
+  watchers: number;
+  lead_list_users: number;
+  online_users: number;
+  created_at?: string;
+  updated_at?: string;
+  // Relations
+  lot_final_states?: DatabaseLotFinalState[];
+}
+
+// Database lot final state interface
+export interface DatabaseLotFinalState {
+  id: string;
+  lot_number: number;
+  sold_price: number;
+  reserve_price: number;
+  performance_value: number;
+  performance_text: string;
+  sold_time: string;
+  sold_to: string;
+  sold_to_id: string;
+  status: string;
+  created_at?: string;
+}
+
+// Database lot bid interface
+export interface DatabaseLotBid {
+  id: string;
+  lot_final_state_id: string;
+  bidder: string;
+  bidder_id: string;
+  amount: number;
+  time: string;
+  type: string;
+  bid_type: string;
+  company_name?: string;
+  company_type?: string;
+  city?: string;
+  country?: string;
+  created_at?: string;
+}
+
+// Database message interface
+export interface DatabaseMessage {
+  id: string;
+  created_at?: string;
+  text: string;
+  time: string;
+  alternate: boolean;
+  dealer: string;
+  dealer_id: string;
+  recipient_id?: string;
+  type?: string;
+  is_global?: boolean;
+  is_read?: boolean;
+}
+
+// Database auction interface
+export interface DatabaseAuction {
+  id: string;
+  auction_title: string;
+  auction_id: string;
+  auction_date: string;
+  auction_company: string;
+  default_locale: string;
+  default_currency: string;
+  created_at: string;
+}
+
+// Database content interface
+export interface DatabaseContent {
+  system: number;
+  locale: string;
+  path: string;
+  filename: string;
+  key: string;
+  value: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Database lot user activity interface
+export interface DatabaseLotUserActivity {
+  id: string;
+  created_at?: string;
+  lot_number: number;
+  dealer_id: string;
+  activity_type: string;
+  last_active: string;
+  last_buy: string;
+  dealer_name: string;
+  dealer_type: string;
+}
+
+// ============================================
+// APPLICATION INTERFACES (camelCase, for use in the app)
+// ============================================
+
+// Unified dealer interface that the application will use
+export interface BaseDealer {
+  id: string; // Standardized ID field
+  firstName: string;
+  lastName: string;
+  fullName: string; // Computed full name
+  phone?: string;
+  mobilePhone?: string;
+  note?: string;
+  lastLogin?: string;
+  lastBidDate?: string;
+  lastBuy?: string;
+  type: string;
   companyName?: string;
   companyType?: string;
   city?: string;
