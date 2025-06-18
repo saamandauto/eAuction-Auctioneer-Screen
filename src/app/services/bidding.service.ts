@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Subject, Subscription, timer } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Dealer, Bid, LotDetails } from '../models/interfaces';
 import { AuctionService } from './auction.service';
 import { SoundService } from './sound.service';
+import { getDealerName, getDealerId } from '../utils/dealer-utils';
 
 @Injectable({
   providedIn: 'root'
@@ -21,10 +22,9 @@ export class BiddingService {
   private availableDealers: Dealer[] = [];
   private totalSimulatedBids = 0; // Track total simulated bids across all lots
 
-  constructor(
-    private auctionService: AuctionService,
-    private soundService: SoundService
-  ) {}
+  // Inject dependencies
+  private auctionService = inject(AuctionService);
+  private soundService = inject(SoundService);
 
   getBids() {
     return this.bidSubject.asObservable();
@@ -51,7 +51,7 @@ export class BiddingService {
     this.currentAskingPrice = askingPrice || currentHighestBid + bidIncrement;
     
     // Filter out bid users
-    this.availableDealers = dealers.filter(d => d.TYPE !== 'Bid User 1' && d.TYPE !== 'Bid User 2');
+    this.availableDealers = dealers.filter(d => d.type !== 'Bid User 1' && d.type !== 'Bid User 2');
     
     if (this.availableDealers.length === 0) {
       return;
@@ -113,11 +113,10 @@ export class BiddingService {
       this.currentAskingPrice
     );
     
-    // Get the dealer's name and ID
-    const dealerName = `${randomDealer.FIRSTNAME || ''} ${randomDealer.LASTNAME || ''}`.trim();
-    const dealerId = (randomDealer.USR_ID ? randomDealer.USR_ID.toString() : '') || 
-                    (randomDealer.ID ? randomDealer.ID.toString() : '');
-    const dealerType = randomDealer.TYPE ?? 'STANDARD';
+    // Get the dealer's name and ID using utility functions
+    const dealerName = getDealerName(randomDealer);
+    const dealerId = getDealerId(randomDealer);
+    const dealerType = randomDealer.type ?? 'STANDARD';
     
     const bid: Bid = {
       bidder: dealerName,

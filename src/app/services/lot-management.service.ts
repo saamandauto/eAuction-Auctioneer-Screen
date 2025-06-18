@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { VoiceService } from './voice.service';
 import { BiddingService } from './bidding.service';
@@ -17,14 +17,15 @@ export class LotManagementService {
   // Track lots where reserve has been met to avoid duplicate notifications
   private lotsReserveMetAnnounced = new Set<number>();
 
-  constructor(
-    private auctionState: AuctionStateService,
-    private auctionService: AuctionService,
-    private biddingService: BiddingService,
-    private voiceService: VoiceService,
-    private toastr: ToastrService,
-    private auctionStatsService: AuctionStatsService
-  ) {
+  // Inject dependencies
+  private auctionState = inject(AuctionStateService);
+  private auctionService = inject(AuctionService);
+  private biddingService = inject(BiddingService);
+  private voiceService = inject(VoiceService);
+  private toastr = inject(ToastrService);
+  private auctionStatsService = inject(AuctionStatsService);
+
+  constructor() {
     this.voiceService.getHasCreditsError().subscribe(hasError => {
       this.hasCreditsError = hasError;
     });

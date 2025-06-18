@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
 import { VoiceService } from '../../services/voice.service';
 import { SpeechRecognitionService } from '../../services/speech-recognition.service';
@@ -16,7 +17,7 @@ import { LocalizationService, LanguageOption, CurrencyOption } from '../../servi
   templateUrl: './settings-panel.component.html',
   styleUrls: ['./settings-panel.component.scss']
 })
-export class SettingsPanelComponent {
+export class SettingsPanelComponent implements OnInit, OnDestroy {
   @Input() isOpen = false;
   @Output() close = new EventEmitter<void>();
   
@@ -47,6 +48,9 @@ export class SettingsPanelComponent {
   currentLocale = 'en_GB';
   availableCurrencies: CurrencyOption[] = [];
   selectedCurrencyCode = 'GBP';
+
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
   
   constructor(
     private keyboardShortcutService: KeyboardShortcutService,
@@ -57,41 +61,48 @@ export class SettingsPanelComponent {
     private seedService: SeedService,
     public localizationService: LocalizationService
   ) {
-    this.keyboardShortcutService.getShowShortcutsInUI().subscribe(
-      show => this.showShortcutsInUI = show
-    );
-    
-    this.voiceService.getVoiceEnabled().subscribe(
-      enabled => this.voiceEnabled = enabled
-    );
-    
-    this.soundService.getSoundEnabled().subscribe(
-      enabled => this.soundEnabled = enabled
-    );
-    
-    this.auctionState.getSimulatedBiddingEnabledObservable().subscribe(
-      enabled => this.simulatedBiddingEnabled = enabled
-    );
-    
-    this.auctionState.getSkipConfirmationsObservable().subscribe(
-      skip => this.skipConfirmations = skip
-    );
-    
-    this.auctionState.select('hammerRequiresReserveMet').subscribe(
-      required => this.hammerRequiresReserveMet = required
-    );
-
     // Initialize localization settings
     this.availableLanguages = this.localizationService.availableLanguages;
     this.availableCurrencies = this.localizationService.availableCurrencies;
+  }
+  
+  ngOnInit() {
+    this.keyboardShortcutService.getShowShortcutsInUI()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(show => this.showShortcutsInUI = show);
     
-    this.localizationService.getCurrentLocale().subscribe(
-      locale => this.currentLocale = locale
-    );
+    this.voiceService.getVoiceEnabled()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(enabled => this.voiceEnabled = enabled);
     
-    this.localizationService.getCurrentCurrency().subscribe(
-      currency => this.selectedCurrencyCode = currency
-    );
+    this.soundService.getSoundEnabled()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(enabled => this.soundEnabled = enabled);
+    
+    this.auctionState.getSimulatedBiddingEnabledObservable()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(enabled => this.simulatedBiddingEnabled = enabled);
+    
+    this.auctionState.getSkipConfirmationsObservable()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(skip => this.skipConfirmations = skip);
+    
+    this.auctionState.select('hammerRequiresReserveMet')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(required => this.hammerRequiresReserveMet = required);
+    
+    this.localizationService.getCurrentLocale()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(locale => this.currentLocale = locale);
+    
+    this.localizationService.getCurrentCurrency()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(currency => this.selectedCurrencyCode = currency);
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
   
   onToggleShowShortcuts() {
@@ -136,78 +147,90 @@ export class SettingsPanelComponent {
 
   onSeedAuctionData() {
     this.isSeedingAuctionData = true;
-    this.seedService.seedAuctionData().subscribe({
-      next: (response) => {
-        this.isSeedingAuctionData = false;
-      },
-      error: (error) => {
-        this.isSeedingAuctionData = false;
-      }
-    });
+    this.seedService.seedAuctionData()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSeedingAuctionData = false;
+        },
+        error: (error) => {
+          this.isSeedingAuctionData = false;
+        }
+      });
   }
   
   onSeedLots() {
     this.isSeedingLots = true;
-    this.seedService.seedLots().subscribe({
-      next: (response) => {
-        this.isSeedingLots = false;
-      },
-      error: (error) => {
-        this.isSeedingLots = false;
-      }
-    });
+    this.seedService.seedLots()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSeedingLots = false;
+        },
+        error: (error) => {
+          this.isSeedingLots = false;
+        }
+      });
   }
   
   onSeedMessages() {
     this.isSeedingMessages = true;
-    this.seedService.seedMessages().subscribe({
-      next: (response) => {
-        this.isSeedingMessages = false;
-      },
-      error: (error) => {
-        this.isSeedingMessages = false;
-      }
-    });
+    this.seedService.seedMessages()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSeedingMessages = false;
+        },
+        error: (error) => {
+          this.isSeedingMessages = false;
+        }
+      });
   }
   
   onSeedLotUserActivity() {
     this.isSeedingActivity = true;
-    this.seedService.seedLotUserActivity().subscribe({
-      next: (response) => {
-        this.isSeedingActivity = false;
-      },
-      error: (error) => {
-        this.isSeedingActivity = false;
-      }
-    });
+    this.seedService.seedLotUserActivity()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSeedingActivity = false;
+        },
+        error: (error) => {
+          this.isSeedingActivity = false;
+        }
+      });
   }
 
   onSeedContent() {
     this.isSeedingContent = true;
-    this.seedService.seedContent().subscribe({
-      next: (response) => {
-        this.isSeedingContent = false;
-        // Refresh the localization content after seeding
-        this.localizationService.refreshContent();
-      },
-      error: (error) => {
-        this.isSeedingContent = false;
-      }
-    });
+    this.seedService.seedContent()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSeedingContent = false;
+          // Refresh the localization content after seeding
+          this.localizationService.refreshContent();
+        },
+        error: (error) => {
+          this.isSeedingContent = false;
+        }
+      });
   }
 
   onSeedHeaderContent() {
     this.isSeedingHeaderContent = true;
-    this.seedService.seedHeaderContent().subscribe({
-      next: (response) => {
-        this.isSeedingHeaderContent = false;
-        // Refresh the localization content after seeding
-        this.localizationService.refreshContent();
-      },
-      error: (error) => {
-        this.isSeedingHeaderContent = false;
-      }
-    });
+    this.seedService.seedHeaderContent()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSeedingHeaderContent = false;
+          // Refresh the localization content after seeding
+          this.localizationService.refreshContent();
+        },
+        error: (error) => {
+          this.isSeedingHeaderContent = false;
+        }
+      });
   }
   
   onClose() {

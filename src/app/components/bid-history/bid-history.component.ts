@@ -1,20 +1,18 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Bid } from '../../models/interfaces';
-import { LocalizationService } from '../../services/localization.service';
+import { FormatPricePipe } from '../../pipes/format-price.pipe';
 
 @Component({
   selector: 'app-bid-history',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormatPricePipe],
   templateUrl: './bid-history.component.html',
   styleUrls: ['./bid-history.component.scss']
 })
 export class BidHistoryComponent {
   @Input() bids: Bid[] = [];
   expanded = false;
-
-  constructor(public localizationService: LocalizationService) {}
 
   get displayedBids(): Bid[] {
     return this.expanded ? this.bids : this.bids.slice(0, 10);

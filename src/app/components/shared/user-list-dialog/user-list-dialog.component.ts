@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { ViewerInfo, SortColumn, SortDirection } from '../../../models/interfaces';
 
 @Component({
@@ -10,7 +11,7 @@ import { ViewerInfo, SortColumn, SortDirection } from '../../../models/interface
   templateUrl: './user-list-dialog.component.html',
   styleUrls: ['./user-list-dialog.component.scss']
 })
-export class UserListDialogComponent implements OnInit, OnChanges {
+export class UserListDialogComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isOpen = false;
   @Input() users: ViewerInfo[] = [];
   @Input() type = '';
@@ -22,6 +23,9 @@ export class UserListDialogComponent implements OnInit, OnChanges {
   filteredUsers: ViewerInfo[] = [];
   sortColumn: SortColumn = 'lastActive';
   sortDirection: SortDirection = 'desc';
+
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
 
   get emptyRows(): number[] {
     const currentRows = this.filteredUsers.length;
@@ -40,6 +44,11 @@ export class UserListDialogComponent implements OnInit, OnChanges {
 
   ngOnChanges() {
     this.filterUsers();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   filterUsers() {

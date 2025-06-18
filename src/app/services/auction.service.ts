@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { Bid, Dealer, LotDetails } from '../models/interfaces';
 import { LotStatus, HammerState } from '../models/enums';
@@ -7,7 +7,8 @@ import { LotStatus, HammerState } from '../models/enums';
   providedIn: 'root'
 })
 export class AuctionService {
-  constructor(private toastr: ToastrService) {}
+  // Inject dependencies
+  private toastr = inject(ToastrService);
 
   getRandomDealer(dealers: Dealer[]): Dealer {
     return dealers[Math.floor(Math.random() * dealers.length)];

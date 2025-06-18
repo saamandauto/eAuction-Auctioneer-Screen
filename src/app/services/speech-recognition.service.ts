@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
@@ -73,7 +73,10 @@ export class SpeechRecognitionService {
     'stop simulation'
   ];
 
-  constructor(private toastr: ToastrService) {
+  // Inject dependencies
+  private toastr = inject(ToastrService);
+
+  constructor() {
     this.initializeSpeechRecognition();
     this.setupKeyListeners();
   }

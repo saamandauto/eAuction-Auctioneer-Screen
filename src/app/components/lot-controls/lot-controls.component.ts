@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotStatus, HammerState } from '../../models/enums';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
@@ -59,7 +59,10 @@ export class LotControlsComponent {
   
   showShortcutsInUI = false;
 
-  constructor(private keyboardShortcutService: KeyboardShortcutService) {
+  // Inject dependencies
+  private keyboardShortcutService = inject(KeyboardShortcutService);
+
+  constructor() {
     this.keyboardShortcutService.getShowShortcutsInUI().subscribe(show => {
       this.showShortcutsInUI = show;
     });

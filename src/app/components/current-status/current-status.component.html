@@ -4,25 +4,25 @@
     <div class="price-item">
       <label>Highest Bid</label>
       <span class="price" [class.above-reserve]="isAboveReserve">
-        {{ localizationService.formatPrice(currentHighestBid) }}
+        {{ currentHighestBid | formatPrice }}
         <span class="reserve-met-indicator" *ngIf="isAboveReserve">Reserve Met</span>
       </span>
     </div>
     <div class="price-item">
       <label>Asking Price</label>
       <span class="price">
-        {{ localizationService.formatPrice(askingPrice) }}
+        {{ askingPrice | formatPrice }}
       </span>
     </div>
   </div>
   <div class="current-status">
     <div class="status-row">
       <span>Start Price:</span>
-      <span>{{ localizationService.formatPrice(startPrice) }}</span>
+      <span>{{ startPrice | formatPrice }}</span>
     </div>
     <div class="status-row">
       <span>Reserve Price:</span>
-      <span>{{ localizationService.formatPrice(lot?.reservePrice) }}</span>
+      <span>{{ lot?.reservePrice | formatPrice }}</span>
     </div>
     <div class="status-row">
       <span>Lot Performance:</span>
@@ -33,14 +33,14 @@
     </div>
     <div class="status-row">
       <span>Last Auction:</span>
-      <span>{{ localizationService.formatPrice(lot?.lastAuctionBid) }}</span>
+      <span>{{ lot?.lastAuctionBid | formatPrice }}</span>
     </div>
     <div class="status-row">
       <span>Indicata Market Price:</span>
-      <span>{{ localizationService.formatPrice(lot?.indicataMarketPrice) }}</span>
+      <span>{{ lot?.indicataMarketPrice | formatPrice }}</span>
     </div>
   </div>
   <div class="buyer-fee-info">
-    Buyer fee: {{ localizationService.formatPrice(0) }} - Car Vat qualifying
+    Buyer fee: {{ 0 | formatPrice }} - Car Vat qualifying
   </div>
 </div>

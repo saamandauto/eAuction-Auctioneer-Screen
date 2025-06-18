@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, from, map, catchError, of, tap } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AuctionDataService } from './auction-data.service';
@@ -55,11 +55,12 @@ export class LocalizationService {
   private contentCache = new Map<string, string>();
   private isInitialized = false;
 
-  constructor(
-    private supabaseService: SupabaseService,
-    private auctionDataService: AuctionDataService,
-    private toastr: ToastrService
-  ) {
+  // Inject dependencies
+  private supabaseService = inject(SupabaseService);
+  private auctionDataService = inject(AuctionDataService);
+  private toastr = inject(ToastrService);
+
+  constructor() {
     this.initialize();
   }
 

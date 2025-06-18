@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { VoiceService } from './voice.service';
 import { BiddingService } from './bidding.service';
@@ -12,13 +12,14 @@ import { AuctionStatsService } from './auction-stats.service';
 export class AuctionLifecycleService {
   private hasCreditsError = false;
 
-  constructor(
-    private auctionState: AuctionStateService,
-    private biddingService: BiddingService,
-    private voiceService: VoiceService,
-    private toastr: ToastrService,
-    private auctionStatsService: AuctionStatsService
-  ) {
+  // Inject dependencies
+  private auctionState = inject(AuctionStateService);
+  private biddingService = inject(BiddingService);
+  private voiceService = inject(VoiceService);
+  private toastr = inject(ToastrService);
+  private auctionStatsService = inject(AuctionStatsService);
+
+  constructor() {
     this.voiceService.getHasCreditsError().subscribe(hasError => {
       this.hasCreditsError = hasError;
     });

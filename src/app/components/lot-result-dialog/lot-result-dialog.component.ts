@@ -2,12 +2,12 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotDetails, Bid } from '../../models/interfaces';
 import { LotStatus } from '../../models/enums';
-import { LocalizationService } from '../../services/localization.service';
+import { FormatPricePipe } from '../../pipes/format-price.pipe';
 
 @Component({
   selector: 'app-lot-result-dialog',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormatPricePipe],
   templateUrl: './lot-result-dialog.component.html',
   styleUrls: ['./lot-result-dialog.component.scss']
 })
@@ -17,8 +17,6 @@ export class LotResultDialogComponent {
   @Input() onClose: () => void = () => {};
 
   LotStatus = LotStatus; // Make enum available in template
-
-  constructor(public localizationService: LocalizationService) {}
 
   get finalState() {
     return this.lot?.finalState;
@@ -51,12 +49,13 @@ ID: ${bid.bidderId}
     return this.finalState?.status === LotStatus.NO_SALE;
   }
 
-  // Get highest bid with formatting
+  // Get highest bid with formatting - returns raw string since pipe is used in template
   getHighestBid(): string {
     if (this.bids.length === 0) {
       return 'No bids';
     }
-    return this.localizationService.formatPrice(this.bids[0].amount);
+    // Return raw number since FormatPricePipe will be applied in template
+    return this.bids[0].amount.toString();
   }
 
   // Get CSS class based on status

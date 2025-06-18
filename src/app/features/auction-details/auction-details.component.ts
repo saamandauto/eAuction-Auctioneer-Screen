@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuctionDetailsComponent } from '../../components/auction-details/auction-details.component';
 import { Observable } from 'rxjs';
@@ -25,7 +25,10 @@ export class AuctionDetailsFeatureComponent implements OnInit {
   totalReserveValue$: Observable<number>;
   performance$: Observable<{sum: string, percentage: string}>;
   
-  constructor(private auctionStatsService: AuctionStatsService) {
+  // Inject dependencies
+  private auctionStatsService = inject(AuctionStatsService);
+  
+  constructor() {
     // Initialize observables
     this.soldLots$ = this.auctionStatsService.getSoldLots();
     this.withdrawnLots$ = this.auctionStatsService.getWithdrawnLots();

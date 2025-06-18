@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { AuctionStateService } from '../auction/auction-state.service';
 import { AuctionService } from './auction.service';
 import { SupabaseService } from './supabase.service';
@@ -11,12 +11,13 @@ import { getDealerId } from '../utils/dealer-utils';
   providedIn: 'root'
 })
 export class MessagingService {
-  constructor(
-    private auctionState: AuctionStateService,
-    private auctionService: AuctionService,
-    private supabaseService: SupabaseService,
-    private toastr: ToastrService
-  ) {
+  // Inject dependencies
+  private auctionState = inject(AuctionStateService);
+  private auctionService = inject(AuctionService);
+  private supabaseService = inject(SupabaseService);
+  private toastr = inject(ToastrService);
+
+  constructor() {
     // Load messages from Supabase when the service initializes
     this.loadMessages();
   }
@@ -188,7 +189,7 @@ export class MessagingService {
         if (messageData.isGlobal && !selectedDealer) {
           this.toastr.success('Announcement sent to all dealers');
         } else if (selectedDealer) {
-          this.toastr.success(`Message sent to ${selectedDealer.FIRSTNAME} ${selectedDealer.LASTNAME}`);
+          this.toastr.success(`Message sent to ${selectedDealer.fullName}`);
         }
       },
       error: (error) => {

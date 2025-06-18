@@ -19,11 +19,11 @@
         <ng-container *ngIf="isSold(); else notSoldTemplate">
           <div class="summary-row">
             <span>Final Price:</span>
-            <span class="price">{{ localizationService.formatPrice(finalState?.soldPrice) }}</span>
+            <span class="price">{{ finalState?.soldPrice | formatPrice }}</span>
           </div>
           <div class="summary-row">
             <span>Reserve Price:</span>
-            <span>{{ localizationService.formatPrice(finalState?.reservePrice) }}</span>
+            <span>{{ finalState?.reservePrice | formatPrice }}</span>
           </div>
           <div class="summary-row">
             <span>Performance:</span>
@@ -50,7 +50,7 @@
           </div>
           <div class="summary-row">
             <span>Reserve Price:</span>
-            <span>{{ localizationService.formatPrice(finalState?.reservePrice) }}</span>
+            <span>{{ finalState?.reservePrice | formatPrice }}</span>
           </div>
           <div class="summary-row">
             <span>Time Processed:</span>
@@ -89,7 +89,7 @@
                     {{ bid.bidder }}
                   </span>
                 </td>
-                <td>{{ localizationService.formatPrice(bid.amount) }}</td>
+                <td>{{ bid.amount | formatPrice }}</td>
                 <td>{{ bid.time }}</td>
               </tr>
               <tr *ngIf="bids.length === 0" class="empty-row">

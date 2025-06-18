@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotDetails } from '../../models/interfaces';
-import { LocalizationService } from '../../services/localization.service';
+import { FormatMileagePipe } from '../../pipes/format-mileage.pipe';
+import { LocalizeTextPipe } from '../../pipes/localize-text.pipe';
 
 @Component({
   selector: 'app-vehicle-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormatMileagePipe, LocalizeTextPipe],
   templateUrl: './vehicle-details.component.html',
   styleUrls: ['./vehicle-details.component.scss']
 })
@@ -16,8 +17,6 @@ export class VehicleDetailsComponent {
   @Output() watchersClick = new EventEmitter<void>();
   @Output() leadsClick = new EventEmitter<void>();
   @Output() onlineClick = new EventEmitter<void>();
-
-  constructor(public localizationService: LocalizationService) {}
 
   openViewersDialog() {
     this.viewersClick.emit();

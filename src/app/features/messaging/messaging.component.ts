@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -24,10 +24,9 @@ export class MessagingComponent {
   @Output() sendMessage = new EventEmitter<{ text: string, isGlobal: boolean }>();
   @Output() selectDealer = new EventEmitter<Dealer | null>();
 
-  constructor(
-    private auctionService: AuctionService,
-    private toastr: ToastrService
-  ) {}
+  // Inject dependencies
+  private auctionService = inject(AuctionService);
+  private toastr = inject(ToastrService);
 
   onSelectDealer(dealer: Dealer | null) {
     this.selectDealer.emit(dealer);
@@ -44,7 +43,7 @@ export class MessagingComponent {
     if (messageData.isGlobal && !this.selectedDealer) {
       this.toastr.success('Announcement sent to all dealers');
     } else if (this.selectedDealer) {
-      const dealerName = `${this.selectedDealer.FIRSTNAME || ''} ${this.selectedDealer.LASTNAME || ''}`.trim();
+      const dealerName = this.selectedDealer.fullName;
       this.toastr.success(`Message sent to ${dealerName}`);
     }
   }

@@ -2,7 +2,7 @@ import { LotStatus } from './enums';
 
 export { LotStatus } from './enums';
 
-// Refactored Dealer interfaces
+// Unified dealer interface that the application will use
 export interface BaseDealer {
   id: string; // Standardized ID field
   firstName: string;
@@ -21,7 +21,8 @@ export interface BaseDealer {
   country?: string;
 }
 
-export interface LegacyDealer {
+// Database dealer interface that matches the Supabase structure
+export interface DatabaseDealer {
   ID?: number;
   USR_ID?: number;
   FIRSTNAME?: string | null;
@@ -39,43 +40,34 @@ export interface LegacyDealer {
   country?: string;
 }
 
-// Combined interface for supporting both formats
-export type Dealer = LegacyDealer;
+// The application uses BaseDealer as the unified dealer type
+export type Dealer = BaseDealer;
 
-// Helper functions to convert between formats
-export function legacyToDealerModel(legacy: LegacyDealer): BaseDealer {
-  const id = (legacy.USR_ID ? legacy.USR_ID.toString() : '') || 
-             (legacy.ID ? legacy.ID.toString() : '');
+// Helper function to convert database format to application format
+export function databaseToDealerModel(dbDealer: DatabaseDealer): BaseDealer {
+  const id = (dbDealer.USR_ID ? dbDealer.USR_ID.toString() : '') || 
+             (dbDealer.ID ? dbDealer.ID.toString() : '');
   
-  const firstName = legacy.FIRSTNAME || '';
-  const lastName = legacy.LASTNAME || '';
+  const firstName = dbDealer.FIRSTNAME || '';
+  const lastName = dbDealer.LASTNAME || '';
   
   return {
     id,
     firstName,
     lastName,
     fullName: `${firstName} ${lastName}`.trim(),
-    phone: legacy.PHONE || undefined,
-    mobilePhone: legacy.MOBILEPHONE || undefined,
-    note: legacy.NOTE || undefined,
-    lastLogin: legacy.LASTLOGIN || undefined,
-    lastBidDate: legacy.LASTBIDDATE || undefined,
-    lastBuy: legacy.LASTBUY || undefined,
-    type: legacy.TYPE || 'Standard',
-    companyName: legacy.companyName,
-    companyType: legacy.companyType,
-    city: legacy.city,
-    country: legacy.country
+    phone: dbDealer.PHONE || undefined,
+    mobilePhone: dbDealer.MOBILEPHONE || undefined,
+    note: dbDealer.NOTE || undefined,
+    lastLogin: dbDealer.LASTLOGIN || undefined,
+    lastBidDate: dbDealer.LASTBIDDATE || undefined,
+    lastBuy: dbDealer.LASTBUY || undefined,
+    type: dbDealer.TYPE || 'Standard',
+    companyName: dbDealer.companyName,
+    companyType: dbDealer.companyType,
+    city: dbDealer.city,
+    country: dbDealer.country
   };
-}
-
-export function getDealerName(dealer: Dealer): string {
-  return `${dealer.FIRSTNAME || ''} ${dealer.LASTNAME || ''}`.trim();
-}
-
-export function getDealerId(dealer: Dealer): string {
-  return (dealer.USR_ID ? dealer.USR_ID.toString() : '') || 
-         (dealer.ID ? dealer.ID.toString() : '');
 }
 
 export interface LotDetails {

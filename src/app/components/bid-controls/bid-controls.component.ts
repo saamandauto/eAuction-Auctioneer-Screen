@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotStatus } from '../../models/enums';
@@ -37,10 +37,11 @@ export class BidControlsComponent {
   localAskingPrice = 0;
   showShortcutsInUI = false;
 
-  constructor(
-    private keyboardShortcutService: KeyboardShortcutService,
-    public localizationService: LocalizationService
-  ) {
+  // Inject dependencies
+  private keyboardShortcutService = inject(KeyboardShortcutService);
+  public localizationService = inject(LocalizationService);
+
+  constructor() {
     this.keyboardShortcutService.getShowShortcutsInUI().subscribe(show => {
       this.showShortcutsInUI = show;
     });

@@ -1,7 +1,7 @@
 <div class="history-panel">
   <div class="panel-header">
     <h3>Dealers</h3>
-    <span class="bid-count">{{ filteredDealers.length }} dealers</span>
+    <span class="bid-count">{{ displayDealers.length }} dealers</span>
   </div>
 
   <div class="filter-controls">
@@ -38,7 +38,7 @@
              class="search-input" 
              placeholder="Search dealers..."
              [(ngModel)]="searchTerm"
-             (input)="filterDealers()">
+             (input)="updateDisplayDealers()">
     </div>
   </div>
 
@@ -53,34 +53,34 @@
       </thead>
       <tbody>
         <tr *ngFor="let dealer of displayedDealers"
-            [title]="getDealerTooltip(dealer)"
+            [title]="dealer.tooltipText"
             (click)="onDealerClick(dealer)"
-            [class.selected]="isSelected(dealer)"
+            [class.selected]="dealer.isSelected"
             class="clickable">
           <td>
             {{ getDealerName(dealer) }}
           </td>
           <td>
             <div class="dealer-status">
-              <span class="status-icon" *ngIf="getDealerStatus(getDealerId(dealer))?.isViewer">
+              <span class="status-icon" *ngIf="dealer.displayStatus.isViewer">
                 <i class="ri-eye-line" title="Viewer"></i>
               </span>
-              <span class="status-icon" *ngIf="getDealerStatus(getDealerId(dealer))?.isWatcher">
+              <span class="status-icon" *ngIf="dealer.displayStatus.isWatcher">
                 <i class="ri-star-line" title="Watcher"></i>
               </span>
-              <span class="status-icon" *ngIf="getDealerStatus(getDealerId(dealer))?.isLead">
+              <span class="status-icon" *ngIf="dealer.displayStatus.isLead">
                 <i class="ri-list-check-2" title="Lead"></i>
               </span>
-              <span class="status-icon" *ngIf="getDealerStatus(getDealerId(dealer))?.isOnline">
+              <span class="status-icon" *ngIf="dealer.displayStatus.isOnline">
                 <i class="ri-user-line" title="Online"></i>
               </span>
             </div>
           </td>
           <td>
-            <div class="message-count" *ngIf="getMessageCount(getDealerId(dealer)).total > 0">
-              {{ getMessageCount(getDealerId(dealer)).total }}
-              <span class="unread-count" *ngIf="getMessageCount(getDealerId(dealer)).unread > 0">
-                ({{ getMessageCount(getDealerId(dealer)).unread }} new)
+            <div class="message-count" *ngIf="dealer.messageCount.total > 0">
+              {{ dealer.messageCount.total }}
+              <span class="unread-count" *ngIf="dealer.messageCount.unread > 0">
+                ({{ dealer.messageCount.unread }} new)
               </span>
             </div>
           </td>
@@ -96,7 +96,7 @@
       </tbody>
     </table>
   </div>
-  <button *ngIf="filteredDealers.length > 10" 
+  <button *ngIf="displayDealers.length > 10" 
          class="show-more-button" 
          (click)="toggleExpanded()">
     {{ expanded ? 'Show less' : 'Show more' }}

@@ -1,9 +1,13 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { LotDetails, ViewerInfo, SortColumn, SortDirection } from '../../models/interfaces';
+import { Subject, takeUntil } from 'rxjs';
+import { LotDetails, ViewerInfo, SortDirection } from '../../models/interfaces';
 import { UserListDialogComponent } from '../shared/user-list-dialog/user-list-dialog.component';
+import { FormatPricePipe } from '../../pipes/format-price.pipe';
+import { FormatMileagePipe } from '../../pipes/format-mileage.pipe';
+import { LocalizeTextPipe } from '../../pipes/localize-text.pipe';
 import { ToastrService } from 'ngx-toastr';
 import { LotService } from '../../services/lot.service';
 import { LocalizationService } from '../../services/localization.service';
@@ -16,12 +20,15 @@ import { LocalizationService } from '../../services/localization.service';
     FormsModule, 
     UserListDialogComponent,
     CdkDrag,
-    CdkDropList
+    CdkDropList,
+    FormatPricePipe,
+    FormatMileagePipe,
+    LocalizeTextPipe
   ],
   templateUrl: './planned-lots.component.html',
   styleUrls: ['./planned-lots.component.scss']
 })
-export class PlannedLotsComponent implements OnInit {
+export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   @Input() lots: LotDetails[] = [];
   @Output() lotUpdated = new EventEmitter<{lotNumber: number, field: string, value: number}>();
   @Output() lotsReordered = new EventEmitter<LotDetails[]>();
@@ -53,6 +60,12 @@ export class PlannedLotsComponent implements OnInit {
   // Reordering state
   isDragEnabled = false;
   
+  // Pre-computed properties
+  sortedLots: LotDetails[] = [];
+
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
+  
   constructor(
     private toastr: ToastrService,
     private lotService: LotService,
@@ -61,11 +74,18 @@ export class PlannedLotsComponent implements OnInit {
   
   ngOnInit() {
     this.updateToggleVisibility();
+    this.updateSortedLots();
     window.addEventListener('resize', this.updateToggleVisibility.bind(this));
+  }
+  
+  ngOnChanges() {
+    this.updateSortedLots();
   }
   
   ngOnDestroy() {
     window.removeEventListener('resize', this.updateToggleVisibility.bind(this));
+    this.destroy$.next();
+    this.destroy$.complete();
   }
   
   updateToggleVisibility() {
@@ -73,12 +93,13 @@ export class PlannedLotsComponent implements OnInit {
     this.isToggleVisible = width >= 1025 && width <= 1620;
   }
   
-  get sortedLots(): LotDetails[] {
+  private updateSortedLots() {
     if (this.isDragEnabled) {
-      return [...this.lots];
+      this.sortedLots = [...this.lots];
+      return;
     }
     
-    return [...this.lots].sort((a, b) => {
+    this.sortedLots = [...this.lots].sort((a, b) => {
       const direction = this.sortDirection === 'asc' ? 1 : -1;
       
       // Handle different column types appropriately
@@ -117,11 +138,15 @@ export class PlannedLotsComponent implements OnInit {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
+    
+    this.updateSortedLots();
   }
   
   // Toggle drag and drop mode
   toggleDragMode(): void {
     this.isDragEnabled = !this.isDragEnabled;
+    this.updateSortedLots();
+    
     if (this.isDragEnabled) {
       this.toastr.info('Lot reordering enabled. Drag lots to change their order.', '', {
         timeOut: 5000
@@ -184,6 +209,7 @@ export class PlannedLotsComponent implements OnInit {
   openViewersDialog(lot: LotDetails): void {
     this.selectedLot = lot;
     this.lotService.getLotUserActivity(lot.lotNumber, 'viewer')
+      .pipe(takeUntil(this.destroy$))
       .subscribe(viewers => {
         this.viewers = viewers;
         this.isViewersDialogOpen = true;
@@ -197,6 +223,7 @@ export class PlannedLotsComponent implements OnInit {
   openWatchersDialog(lot: LotDetails): void {
     this.selectedLot = lot;
     this.lotService.getLotUserActivity(lot.lotNumber, 'watcher')
+      .pipe(takeUntil(this.destroy$))
       .subscribe(watchers => {
         this.watchers = watchers;
         this.isWatchersDialogOpen = true;
@@ -210,6 +237,7 @@ export class PlannedLotsComponent implements OnInit {
   openLeadsDialog(lot: LotDetails): void {
     this.selectedLot = lot;
     this.lotService.getLotUserActivity(lot.lotNumber, 'lead')
+      .pipe(takeUntil(this.destroy$))
       .subscribe(leads => {
         this.leads = leads;
         this.isLeadsDialogOpen = true;
@@ -223,6 +251,7 @@ export class PlannedLotsComponent implements OnInit {
   openOnlineDialog(lot: LotDetails): void {
     this.selectedLot = lot;
     this.lotService.getLotUserActivity(lot.lotNumber, 'online')
+      .pipe(takeUntil(this.destroy$))
       .subscribe(onlineUsers => {
         this.onlineUsers = onlineUsers;
         this.isOnlineDialogOpen = true;

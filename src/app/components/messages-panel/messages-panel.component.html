@@ -63,7 +63,7 @@
   <div class="message-input-container">
     <input type="text" 
            [(ngModel)]="newMessage"
-           [placeholder]="getMessagePlaceholder()"
+           [placeholder]="messagePlaceholder"
            class="message-input"
            (keyup.enter)="onSendMessage()">
     <button class="button button-primary" (click)="onSendMessage()">

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { VoiceService } from './voice.service';
 import { SoundService } from './sound.service';
@@ -17,16 +17,17 @@ export class BiddingOrchestrationService {
   // Track the last time a bid was announced
   private lastBidAnnouncementTime = 0;
   private bidAnnouncementCooldown = 5000; // 5 seconds cooldown between bid announcements
+
+  // Inject dependencies
+  private auctionState = inject(AuctionStateService);
+  private auctionService = inject(AuctionService);
+  private biddingService = inject(BiddingService);
+  private voiceService = inject(VoiceService);
+  private soundService = inject(SoundService);
+  private toastr = inject(ToastrService);
+  private auctionStatsService = inject(AuctionStatsService);
   
-  constructor(
-    private auctionState: AuctionStateService,
-    private auctionService: AuctionService,
-    private biddingService: BiddingService,
-    private voiceService: VoiceService,
-    private soundService: SoundService,
-    private toastr: ToastrService,
-    private auctionStatsService: AuctionStatsService
-  ) {
+  constructor() {
     this.voiceService.getHasCreditsError().subscribe(hasError => {
       this.hasCreditsError = hasError;
     });

@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subject, Observable, combineLatest, map, takeUntil } from 'rxjs';
 import { HeaderComponent } from './components/header/header.component';
 import { VehicleDetailsFeatureComponent } from './features/vehicle-details/vehicle-details.component';
 import { BiddingComponent } from './features/bidding/bidding.component';
@@ -20,7 +20,9 @@ import { AuctionStateService } from './auction/auction-state.service';
 import { LotStatus, HammerState } from './models/enums';
 import { KeyboardShortcutService } from './services/keyboard-shortcut.service';
 import { ToastrService } from 'ngx-toastr';
-import { LotDetails } from './models/interfaces';
+import { LotDetails, ViewerInfo } from './models/interfaces';
+import { LotPerformance } from './models/display-interfaces';
+import { AuctionService } from './services/auction.service';
 import { AuctionLifecycleService } from './services/auction-lifecycle.service';
 import { LotManagementService } from './services/lot-management.service';
 import { BiddingOrchestrationService } from './services/bidding-orchestration.service';
@@ -59,21 +61,47 @@ export class AppComponent implements OnInit, OnDestroy {
   // Settings panel state
   isSettingsPanelOpen = false;
   
-  // Subscriptions to clean up
-  private subscriptions: Subscription[] = [];
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
   
-  constructor(
-    public auctionState: AuctionStateService,
-    public lotUserActivityService: LotUserActivityService,
-    private auctionEventService: AuctionEventService,
-    private auctionLifecycleService: AuctionLifecycleService,
-    private lotManagementService: LotManagementService,
-    private biddingOrchestrationService: BiddingOrchestrationService,
-    private dialogService: DialogService,
-    private messagingService: MessagingService,
-    private toastr: ToastrService,
-    private keyboardShortcutService: KeyboardShortcutService
-  ) {}
+  // Observable properties for template consumption
+  lotPerformance$: Observable<LotPerformance>;
+  viewers$: Observable<ViewerInfo[]>;
+  watchers$: Observable<ViewerInfo[]>;
+  leads$: Observable<ViewerInfo[]>;
+  onlineUsers$: Observable<ViewerInfo[]>;
+
+  // Inject dependencies
+  public auctionState = inject(AuctionStateService);
+  public lotUserActivityService = inject(LotUserActivityService);
+  private auctionEventService = inject(AuctionEventService);
+  private auctionService = inject(AuctionService);
+  private auctionLifecycleService = inject(AuctionLifecycleService);
+  private lotManagementService = inject(LotManagementService);
+  private biddingOrchestrationService = inject(BiddingOrchestrationService);
+  private dialogService = inject(DialogService);
+  private messagingService = inject(MessagingService);
+  private toastr = inject(ToastrService);
+  private keyboardShortcutService = inject(KeyboardShortcutService);
+
+  constructor() {
+    // Initialize observable properties
+    this.lotPerformance$ = combineLatest([
+      this.auctionState.select('currentHighestBid'),
+      this.auctionState.select('currentLot')
+    ]).pipe(
+      map(([currentHighestBid, currentLot]) => {
+        if (!currentLot) return { value: 0, text: '-' };
+        return this.auctionService.calculateLotPerformance(currentHighestBid, currentLot.reservePrice);
+      }),
+      takeUntil(this.destroy$)
+    );
+
+    this.viewers$ = this.lotUserActivityService.getViewers();
+    this.watchers$ = this.lotUserActivityService.getWatchers();
+    this.leads$ = this.lotUserActivityService.getLeads();
+    this.onlineUsers$ = this.lotUserActivityService.getOnlineUsers();
+  }
 
   @HostListener('window:keydown', ['$event'])
   handleGlobalKeyboardEvent(event: KeyboardEvent) {
@@ -98,9 +126,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
   ngOnDestroy(): void {
-    // Clean up all subscriptions
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.subscriptions = [];
+    // Complete the destroy subject to unsubscribe all observables
+    this.destroy$.next();
+    this.destroy$.complete();
   }
   
   // Settings panel methods
@@ -199,10 +227,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
   // Bidding handlers - delegate to BiddingOrchestrationService and LotManagementService
-  getLotPerformance() {
-    return this.lotManagementService.getLotPerformance();
-  }
-  
   setAskingPrice(newPrice: number): void {
     this.biddingOrchestrationService.setAskingPrice(newPrice);
   }

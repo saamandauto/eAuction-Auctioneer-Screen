@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, from, catchError, of, tap, map } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Dealer } from '../models/interfaces';
+import { Dealer, DatabaseDealer, databaseToDealerModel } from '../models/interfaces';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
@@ -9,7 +9,8 @@ import { SupabaseService } from './supabase.service';
 })
 export class DealerService {
   // Mock bid users that aren't stored in the database but are needed for the application
-  private mockBidUsers: Dealer[] = [
+  // These are in DatabaseDealer format as they simulate coming from the database
+  private mockBidUsers: DatabaseDealer[] = [
     { 
       ID: 23456789,
       USR_ID: 23456789,
@@ -47,7 +48,8 @@ export class DealerService {
   ];
 
   // Fallback mock dealers in case Supabase fails
-  private fallbackDealers: Dealer[] = [
+  // These are in DatabaseDealer format as they simulate coming from the database
+  private fallbackDealers: DatabaseDealer[] = [
     { 
       ID: 12345678,
       USR_ID: 12345678,
@@ -101,8 +103,13 @@ export class DealerService {
     }
   ];
 
-  constructor(private supabaseService: SupabaseService) {}
+  // Inject dependencies
+  private supabaseService = inject(SupabaseService);
 
+  /**
+   * Fetches dealers from Supabase and returns them in the unified Dealer format
+   * @returns Observable<Dealer[]> - Array of dealers in the unified format
+   */
   getDealers(): Observable<Dealer[]> {
     return from(
       this.supabaseService.getClient()
@@ -111,7 +118,7 @@ export class DealerService {
     ).pipe(
       tap(response => {
         if (response.error) {
-          // Error in Supabase response
+          console.warn('Error fetching dealers from Supabase:', response.error);
         }
       }),
       map(({ data, error }) => {
@@ -119,59 +126,88 @@ export class DealerService {
           throw error;
         }
         
+        let databaseDealers: DatabaseDealer[];
+        
         if (!data || data.length === 0) {
-          const combinedFallback = [...this.fallbackDealers, ...this.mockBidUsers];
-          return this.prepareDealerData(combinedFallback);
+          console.info('No dealers found in database, using fallback data');
+          databaseDealers = [...this.fallbackDealers, ...this.mockBidUsers];
+        } else {
+          // Combine database dealers with mock bid users
+          databaseDealers = [...data, ...this.mockBidUsers];
         }
         
-        // Combine with mock bid users
-        const allDealers = [...data, ...this.mockBidUsers];
-        return this.prepareDealerData(allDealers);
+        // Transform all DatabaseDealer objects to unified Dealer format
+        return this.transformDealersFromDatabase(databaseDealers);
       }),
       catchError(err => {
+        console.error('Error in getDealers:', err);
         const combinedFallback = [...this.fallbackDealers, ...this.mockBidUsers];
-        return of(this.prepareDealerData(combinedFallback));
+        return of(this.transformDealersFromDatabase(combinedFallback));
       }),
       tap(dealers => {
-        // Final dealers array ready
+        console.info(`Successfully loaded ${dealers.length} dealers in unified format`);
       })
     );
   }
   
-  private prepareDealerData(dealers: any[]): Dealer[] {
-    return dealers.map(dealer => {
-      // Check individual dealer before transformation
-
-      // ID field workaround
-      let dealerId = dealer.ID;
-      if (dealerId === undefined) {
-        // Check USR_ID next
-        dealerId = dealer.USR_ID;
+  /**
+   * Transforms an array of DatabaseDealer objects to the unified Dealer format
+   * @param databaseDealers Array of dealers in database format
+   * @returns Array of dealers in unified format
+   */
+  private transformDealersFromDatabase(databaseDealers: DatabaseDealer[]): Dealer[] {
+    return databaseDealers.map(dbDealer => {
+      try {
+        // Ensure all required database fields exist and format dates if needed
+        const processedDbDealer: DatabaseDealer = {
+          ...dbDealer,
+          // Ensure ID fields are properly set
+          ID: dbDealer.ID || dbDealer.USR_ID,
+          USR_ID: dbDealer.USR_ID || dbDealer.ID,
+          // Format dates if they're Date objects instead of strings
+          LASTLOGIN: this.formatDateField(dbDealer.LASTLOGIN),
+          LASTBIDDATE: this.formatDateField(dbDealer.LASTBIDDATE),
+          LASTBUY: this.formatDateField(dbDealer.LASTBUY),
+          // Ensure required fields have defaults
+          FIRSTNAME: dbDealer.FIRSTNAME || '',
+          LASTNAME: dbDealer.LASTNAME || '',
+          TYPE: dbDealer.TYPE || 'Standard'
+        };
+        
+        // Transform to unified format
+        return databaseToDealerModel(processedDbDealer);
+      } catch (error) {
+        console.error('Error transforming dealer:', dbDealer, error);
+        // Return a fallback dealer in case of transformation error
+        return databaseToDealerModel({
+          ID: 0,
+          USR_ID: 0,
+          FIRSTNAME: 'Unknown',
+          LASTNAME: 'Dealer',
+          TYPE: 'Standard'
+        });
       }
-
-      // Ensure all fields exist
-      const preparedDealer = {
-        ...dealer,
-        // Make sure ID exists and is properly set
-        ID: dealerId,
-        // Format dates if needed
-        LASTLOGIN: dealer.LASTLOGIN ? 
-          (typeof dealer.LASTLOGIN === 'string' ? dealer.LASTLOGIN : new Date(dealer.LASTLOGIN).toLocaleString('en-GB')) : 
-          null,
-        LASTBIDDATE: dealer.LASTBIDDATE ? 
-          (typeof dealer.LASTBIDDATE === 'string' ? dealer.LASTBIDDATE : new Date(dealer.LASTBIDDATE).toLocaleString('en-GB')) : 
-          null,
-        LASTBUY: dealer.LASTBUY ? 
-          (typeof dealer.LASTBUY === 'string' ? dealer.LASTBUY : new Date(dealer.LASTBUY).toLocaleString('en-GB')) : 
-          null,
-        // Ensure USR_ID exists
-        USR_ID: dealer.USR_ID || dealer.ID,
-        FIRSTNAME: dealer.FIRSTNAME || '',
-        LASTNAME: dealer.LASTNAME || '',
-        TYPE: dealer.TYPE || 'Standard'
-      };
-      
-      return preparedDealer;
     });
+  }
+  
+  /**
+   * Formats a date field from the database
+   * @param dateValue The date value from the database
+   * @returns Formatted date string or null
+   */
+  private formatDateField(dateValue: string | Date | null | undefined): string | null {
+    if (!dateValue) {
+      return null;
+    }
+    
+    if (typeof dateValue === 'string') {
+      return dateValue;
+    }
+    
+    if (dateValue instanceof Date) {
+      return dateValue.toLocaleString('en-GB');
+    }
+    
+    return null;
   }
 }

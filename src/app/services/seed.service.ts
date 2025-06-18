@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, tap, of } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -11,10 +11,9 @@ export class SeedService {
   private supabaseUrl = environment.supabase.url;
   private supabaseAnonKey = environment.supabase.anonKey;
 
-  constructor(
-    private http: HttpClient,
-    private toastr: ToastrService
-  ) {}
+  // Inject dependencies
+  private http = inject(HttpClient);
+  private toastr = inject(ToastrService);
 
   seedLots(): Observable<any> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-lots`;

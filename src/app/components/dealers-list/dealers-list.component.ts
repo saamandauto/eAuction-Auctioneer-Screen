@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { Dealer, Message, MessageCount, DealerFilter } from '../../models/interfaces';
+import { DisplayDealer } from '../../models/display-interfaces';
 import { LotUserActivityService } from '../../services/lot-user-activity.service';
 import { getDealerName, getDealerId } from '../../utils/dealer-utils';
 
@@ -12,7 +14,7 @@ import { getDealerName, getDealerId } from '../../utils/dealer-utils';
   templateUrl: './dealers-list.component.html',
   styleUrls: ['./dealers-list.component.scss']
 })
-export class DealersListComponent implements OnInit, OnChanges {
+export class DealersListComponent implements OnInit, OnChanges, OnDestroy {
   @Input() dealers: Dealer[] = [];
   @Input() messages: Message[] = [];
   @Input() selectedDealer: Dealer | null = null;
@@ -20,45 +22,43 @@ export class DealersListComponent implements OnInit, OnChanges {
   
   expanded = false;
   searchTerm = '';
-  filteredDealers: Dealer[] = [];
+  displayDealers: DisplayDealer[] = [];
   currentFilter: DealerFilter = 'all';
+
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
 
   constructor(private lotUserActivityService: LotUserActivityService) {}
 
   ngOnInit() {
-    this.filterDealers();
+    this.updateDisplayDealers();
   }
 
   ngOnChanges() {
-    this.filterDealers();
+    this.updateDisplayDealers();
   }
 
-  // Use imported utility function but maintain component API
-  getDealerName(dealer: Dealer): string {
-    return getDealerName(dealer);
-  }
-
-  // Use imported utility function but maintain component API
-  getDealerId(dealer: Dealer): string {
-    return getDealerId(dealer);
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   setFilter(filter: DealerFilter) {
     this.currentFilter = filter;
-    this.filterDealers();
+    this.updateDisplayDealers();
     // Reset to first page when changing filters
     this.expanded = false;
   }
 
-  filterDealers() {
+  public updateDisplayDealers() {
     if (!this.dealers || this.dealers.length === 0) {
-      this.filteredDealers = [];
+      this.displayDealers = [];
       return;
     }
     
     // First filter out bid users
     let dealers = this.dealers.filter(d => {
-      const type = d.TYPE;
+      const type = d.type;
       return type !== 'Bid User 1' && type !== 'Bid User 2';
     });
 
@@ -70,7 +70,7 @@ export class DealersListComponent implements OnInit, OnChanges {
           return false;
         }
         
-        const status = this.getDealerStatus(dealerId);
+        const status = this.lotUserActivityService.getDealerStatus(dealerId);
         if (!status) {
           return false;
         }
@@ -91,7 +91,7 @@ export class DealersListComponent implements OnInit, OnChanges {
       dealers = dealers.filter(dealer => {
         const name = getDealerName(dealer);
         const dealerId = getDealerId(dealer);
-        const type = dealer.TYPE;
+        const type = dealer.type;
         
         return name.toLowerCase().includes(term) ||
           (dealerId && dealerId.toLowerCase().includes(term)) ||
@@ -100,21 +100,46 @@ export class DealersListComponent implements OnInit, OnChanges {
           dealer.companyType?.toLowerCase().includes(term) ||
           dealer.city?.toLowerCase().includes(term) ||
           dealer.country?.toLowerCase().includes(term) ||
-          dealer.FIRSTNAME?.toLowerCase().includes(term) ||
-          dealer.LASTNAME?.toLowerCase().includes(term);
+          dealer.firstName?.toLowerCase().includes(term) ||
+          dealer.lastName?.toLowerCase().includes(term);
       });
     }
 
+    // Convert to DisplayDealer with pre-computed data
+    this.displayDealers = dealers.map(dealer => {
+      const dealerId = getDealerId(dealer);
+      const dealerStatus = this.lotUserActivityService.getDealerStatus(dealerId || '') || {
+        dealerId: dealerId || '',
+        isViewer: false,
+        isWatcher: false,
+        isLead: false,
+        isOnline: false,
+        lastActive: ''
+      };
+
+      const messageCount = this.getMessageCount(dealerId || '');
+      const tooltipText = this.getDealerTooltip(dealer, dealerStatus);
+      const isSelected = this.isSelected(dealer);
+
+      return {
+        ...dealer,
+        displayStatus: dealerStatus,
+        messageCount,
+        tooltipText,
+        isSelected
+      };
+    });
+
     // Sort alphabetically using name from either format
-    this.filteredDealers = [...dealers].sort((a, b) => {
+    this.displayDealers.sort((a, b) => {
       const nameA = getDealerName(a);
       const nameB = getDealerName(b);
       return nameA.localeCompare(nameB);
     });
   }
 
-  get displayedDealers(): Dealer[] {
-    return this.expanded ? this.filteredDealers : this.filteredDealers.slice(0, 10);
+  get displayedDealers(): DisplayDealer[] {
+    return this.expanded ? this.displayDealers : this.displayDealers.slice(0, 10);
   }
 
   get emptyRows(): number[] {
@@ -127,26 +152,21 @@ export class DealersListComponent implements OnInit, OnChanges {
     this.expanded = !this.expanded;
   }
 
-  getDealerTooltip(dealer: Dealer): string {
+  private getDealerTooltip(dealer: Dealer, status: any): string {
     const dealerId = getDealerId(dealer);
-    const status = this.getDealerStatus(dealerId || '');
     const lastActive = status ? `\nLast Active: ${status.lastActive}` : '';
-    const lastBuy = dealer.LASTBUY ? `\nLast Buy: ${dealer.LASTBUY}` : '';
-    const lastLogin = dealer.LASTLOGIN ? `\nLast Login: ${dealer.LASTLOGIN}` : '';
+    const lastBuy = dealer.lastBuy ? `\nLast Buy: ${dealer.lastBuy}` : '';
+    const lastLogin = dealer.lastLogin ? `\nLast Login: ${dealer.lastLogin}` : '';
     
     return `
 Company: ${dealer.companyName || 'N/A'}
-Type: ${dealer.TYPE || 'N/A'}
+Type: ${dealer.type || 'N/A'}
 Location: ${dealer.city || 'N/A'}, ${dealer.country || 'N/A'}
 ID: ${dealerId}${lastActive}${lastBuy}${lastLogin}
     `.trim();
   }
 
-  getDealerStatus(dealerId: string) {
-    return this.lotUserActivityService.getDealerStatus(dealerId);
-  }
-
-  getMessageCount(dealerId: string): MessageCount {
+  private getMessageCount(dealerId: string): MessageCount {
     const dealerMessages = this.messages.filter(m => 
       m.dealerId === dealerId && !m.alternate && !m.isGlobal
     );
@@ -158,16 +178,25 @@ ID: ${dealerId}${lastActive}${lastBuy}${lastLogin}
     };
   }
 
-  onDealerClick(dealer: Dealer) {
+  onDealerClick(dealer: DisplayDealer) {
     this.selectDealer.emit(dealer);
   }
 
-  isSelected(dealer: Dealer): boolean {
+  private isSelected(dealer: Dealer): boolean {
     if (!this.selectedDealer) return false;
     
     const dealerId = getDealerId(dealer);
     const selectedId = getDealerId(this.selectedDealer);
     
     return dealerId === selectedId;
+  }
+
+  // Public methods for template (simplified since data is pre-computed)
+  getDealerName(dealer: DisplayDealer): string {
+    return getDealerName(dealer);
+  }
+
+  getDealerId(dealer: DisplayDealer): string {
+    return getDealerId(dealer);
   }
 }

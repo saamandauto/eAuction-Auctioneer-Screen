@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, from, catchError, of, tap, map, combineLatest } from 'rxjs';
 import { Bid, Dealer, LotDetails, Message } from '../models/interfaces';
 import { LotStatus, HammerState } from '../models/enums';
@@ -63,12 +63,13 @@ export class AuctionStateService {
   // Type-safe mapping of state keys to their BehaviorSubject observables
   private stateSubjects: { [K in AuctionStateKey]?: BehaviorSubject<AuctionState[K]> } = {};
 
-  constructor(
-    private dealerService: DealerService,
-    private lotService: LotService,
-    private auctionDataService: AuctionDataService,
-    private lotUserActivityService: LotUserActivityService
-  ) {
+  // Inject dependencies
+  private dealerService = inject(DealerService);
+  private lotService = inject(LotService);
+  private auctionDataService = inject(AuctionDataService);
+  private lotUserActivityService = inject(LotUserActivityService);
+
+  constructor() {
     // Initialize the state subjects mapping
     this.initStateSubjects();
     

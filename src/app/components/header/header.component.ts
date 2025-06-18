@@ -1,11 +1,11 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { VoiceService } from '../../services/voice.service';
 import { SpeechRecognitionService } from '../../services/speech-recognition.service';
 import { KeyboardShortcutService } from '../../services/keyboard-shortcut.service';
 import { LocalizationService } from '../../services/localization.service';
-import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
@@ -39,34 +39,31 @@ export class HeaderComponent implements OnInit, OnDestroy {
     return this.isListening;
   }
   
-  private voiceSubscription: Subscription | null = null;
-  private creditsErrorSubscription: Subscription | null = null;
-  private isListeningSubscription: Subscription | null = null;
-  private commandDetectedSubscription: Subscription | null = null;
-  private shortcutsSubscription: Subscription | null = null;
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
 
-  constructor(
-    private voiceService: VoiceService,
-    private speechRecognitionService: SpeechRecognitionService,
-    private keyboardShortcutService: KeyboardShortcutService,
-    public localizationService: LocalizationService
-  ) {}
+  // Inject dependencies
+  private voiceService = inject(VoiceService);
+  private speechRecognitionService = inject(SpeechRecognitionService);
+  private keyboardShortcutService = inject(KeyboardShortcutService);
+  public localizationService = inject(LocalizationService);
 
   ngOnInit() {
-    this.voiceSubscription = this.voiceService.getVoiceEnabled().subscribe(
-      enabled => this.voiceEnabled = enabled
-    );
+    this.voiceService.getVoiceEnabled()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(enabled => this.voiceEnabled = enabled);
     
-    this.creditsErrorSubscription = this.voiceService.getHasCreditsError().subscribe(
-      hasError => this.hasCreditsError = hasError
-    );
+    this.voiceService.getHasCreditsError()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(hasError => this.hasCreditsError = hasError);
     
-    this.isListeningSubscription = this.speechRecognitionService.getIsListening().subscribe(
-      isListening => this.isListening = isListening
-    );
+    this.speechRecognitionService.getIsListening()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isListening => this.isListening = isListening);
     
-    this.commandDetectedSubscription = this.speechRecognitionService.getCommandDetected().subscribe(
-      command => {
+    this.speechRecognitionService.getCommandDetected()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(command => {
         if (command === 'start auction' && !this.isAuctionStarted) {
           this.onStartAuction();
         } else if (command === 'end auction' && this.isAuctionStarted) {
@@ -74,34 +71,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
         } else if (command === 'toggle simulation' || command === 'start simulation' || command === 'stop simulation') {
           this.onToggleSimulatedBidding();
         }
-      }
-    );
+      });
 
-    this.shortcutsSubscription = this.keyboardShortcutService.getShowShortcutsInUI().subscribe(
-      show => this.showShortcutsInUI = show
-    );
+    this.keyboardShortcutService.getShowShortcutsInUI()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(show => this.showShortcutsInUI = show);
   }
 
   ngOnDestroy() {
-    if (this.voiceSubscription) {
-      this.voiceSubscription.unsubscribe();
-    }
-    
-    if (this.creditsErrorSubscription) {
-      this.creditsErrorSubscription.unsubscribe();
-    }
-    
-    if (this.isListeningSubscription) {
-      this.isListeningSubscription.unsubscribe();
-    }
-    
-    if (this.commandDetectedSubscription) {
-      this.commandDetectedSubscription.unsubscribe();
-    }
-
-    if (this.shortcutsSubscription) {
-      this.shortcutsSubscription.unsubscribe();
-    }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onStartAuction() {

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuctionStateService } from './auction-state.service';
 import { Bid, Dealer, LotDetails, Message } from '../models/interfaces';
@@ -20,16 +20,17 @@ export class AuctionEventService {
   private bidAnnouncementCooldown = 5000; // 5 seconds cooldown between bid announcements
   private hasCreditsError = false;
   
-  constructor(
-    private auctionState: AuctionStateService,
-    private biddingService: BiddingService,
-    private voiceService: VoiceService,
-    private auctionLifecycleService: AuctionLifecycleService,
-    private lotManagementService: LotManagementService,
-    private biddingOrchestrationService: BiddingOrchestrationService,
-    private dialogService: DialogService,
-    private messagingService: MessagingService
-  ) {
+  // Inject dependencies
+  private auctionState = inject(AuctionStateService);
+  private biddingService = inject(BiddingService);
+  private voiceService = inject(VoiceService);
+  private auctionLifecycleService = inject(AuctionLifecycleService);
+  private lotManagementService = inject(LotManagementService);
+  private biddingOrchestrationService = inject(BiddingOrchestrationService);
+  private dialogService = inject(DialogService);
+  private messagingService = inject(MessagingService);
+  
+  constructor() {
     this.biddingService.getBids().subscribe(bid => {
       this.onBidPlaced(bid);
     });

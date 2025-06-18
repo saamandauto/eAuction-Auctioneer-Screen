@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ViewChild, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotControlsComponent } from '../../components/lot-controls/lot-controls.component';
 import { LotStatus, HammerState } from '../../models/enums';
@@ -38,7 +38,8 @@ export class LotControlComponent implements OnInit, OnDestroy {
 
   private subscriptions: Subscription[] = [];
 
-  constructor(private auctionState: AuctionStateService) {}
+  // Inject dependencies
+  private auctionState = inject(AuctionStateService);
 
   ngOnInit() {
     // Subscribe to bids changes to reset hammer sequence when new bids arrive
@@ -73,7 +74,7 @@ export class LotControlComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       if (this.lotControlsComponent) {
         this.lotControlsComponent.resetHammerSequence();
-        this.lotControlsComponent.cancelWithdrawalCountdown();
+        this.lotControlsComponent.cancelWithdrawOnNewBid();
       }
     });
   }

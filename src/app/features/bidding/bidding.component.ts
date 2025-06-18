@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BidControlsComponent } from '../../components/bid-controls/bid-controls.component';
@@ -36,7 +36,8 @@ export class BiddingComponent {
   @Output() bidIncrementChanged = new EventEmitter<number>();
   @Output() auctioneerBidCountChanged = new EventEmitter<void>();
 
-  constructor(private auctionService: AuctionService) {}
+  // Inject dependencies
+  private auctionService = inject(AuctionService);
 
   onSetAskingPrice(newPrice: number) {
     if (newPrice > (this.currentHighestBid || 0)) {
@@ -62,24 +63,24 @@ export class BiddingComponent {
     let isAuctioneerBid = false;
     
     if (type === 'user1') {
-      dealer = this.dealers.find(d => d.TYPE === 'Bid User 1')!;
+      dealer = this.dealers.find(d => d.type === 'Bid User 1')!;
       bidType = 'BID1';
       isAuctioneerBid = true;
     } else if (type === 'user2') {
-      dealer = this.dealers.find(d => d.TYPE === 'Bid User 2')!;
+      dealer = this.dealers.find(d => d.type === 'Bid User 2')!;
       bidType = 'BID2';
       isAuctioneerBid = true;
     } else if (type === 'random') {
-      const availableDealers = this.dealers.filter(d => d.TYPE !== 'Bid User 1' && d.TYPE !== 'Bid User 2');
+      const availableDealers = this.dealers.filter(d => d.type !== 'Bid User 1' && d.type !== 'Bid User 2');
       dealer = availableDealers[Math.floor(Math.random() * availableDealers.length)];
       bidType = 'BID1'; // Mark random bids as user bids to highlight them
       isAuctioneerBid = true;
     } else if (type === 'high') {
-      dealer = this.dealers.find(d => d.TYPE === 'Bid User 1')!;
+      dealer = this.dealers.find(d => d.type === 'Bid User 1')!;
       bidType = 'BID1';
       isAuctioneerBid = true;
     } else {
-      const availableDealers = this.dealers.filter(d => d.TYPE !== 'Bid User 1' && d.TYPE !== 'Bid User 2');
+      const availableDealers = this.dealers.filter(d => d.type !== 'Bid User 1' && d.type !== 'Bid User 2');
       dealer = availableDealers[Math.floor(Math.random() * availableDealers.length)];
       bidType = 'STANDARD';
     }
@@ -103,7 +104,7 @@ export class BiddingComponent {
     // Get dealer name and ID using utility functions
     const dealerName = getDealerName(dealer);
     const dealerId = getDealerId(dealer);
-    const dealerType = dealer.TYPE ?? 'STANDARD';
+    const dealerType = dealer.type ?? 'STANDARD';
 
     const bid: Bid = {
       bidder: dealerName,
@@ -126,8 +127,8 @@ export class BiddingComponent {
   }
 
   onStartBidWar() {
-    const bidUser1 = this.dealers.find(d => d.TYPE === 'Bid User 1')!;
-    const bidUser2 = this.dealers.find(d => d.TYPE === 'Bid User 2')!;
+    const bidUser1 = this.dealers.find(d => d.type === 'Bid User 1')!;
+    const bidUser2 = this.dealers.find(d => d.type === 'Bid User 2')!;
     
     // Calculate first bid amount - use asking price as minimum
     const amount1 = Math.max(
@@ -140,7 +141,7 @@ export class BiddingComponent {
     // Get bidUser1 data using utility functions
     const bidUser1Name = getDealerName(bidUser1);
     const bidUser1Id = getDealerId(bidUser1);
-    const bidUser1Type = bidUser1.TYPE ?? 'STANDARD';
+    const bidUser1Type = bidUser1.type ?? 'STANDARD';
     
     const bid1: Bid = {
       bidder: bidUser1Name,
@@ -165,7 +166,7 @@ export class BiddingComponent {
       // Get bidUser2 data using utility functions
       const bidUser2Name = getDealerName(bidUser2);
       const bidUser2Id = getDealerId(bidUser2);
-      const bidUser2Type = bidUser2.TYPE ?? 'STANDARD';
+      const bidUser2Type = bidUser2.type ?? 'STANDARD';
       
       const bid2: Bid = {
         bidder: bidUser2Name,

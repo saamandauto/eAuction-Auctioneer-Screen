@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ViewerInfo, Dealer, DealerStatus } from '../models/interfaces';
 import { LotService } from './lot.service';
+import { getDealerId } from '../utils/dealer-utils';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,8 @@ export class LotUserActivityService {
   // Track dealer statuses for the current lot
   private dealerStatusMap = new Map<string, DealerStatus>();
 
-  constructor(private lotService: LotService) {}
+  // Inject dependencies
+  private lotService = inject(LotService);
 
   /**
    * Load all user activity for a specific lot
@@ -43,8 +45,7 @@ export class LotUserActivityService {
     
     // Initialize status objects for all dealers with default values
     dealers.forEach(dealer => {
-      const dealerId = (dealer.USR_ID ? dealer.USR_ID.toString() : '') || 
-                      (dealer.ID ? dealer.ID.toString() : '');
+      const dealerId = getDealerId(dealer);
       
       if (dealerId) {
         this.dealerStatusMap.set(dealerId, {

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, from, map, catchError, of, tap } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { AuctionData } from '../models/interfaces';
@@ -20,10 +20,9 @@ export class AuctionDataService {
     createdAt: new Date().toISOString()
   };
 
-  constructor(
-    private supabaseService: SupabaseService,
-    private toastr: ToastrService
-  ) {}
+  // Inject dependencies
+  private supabaseService = inject(SupabaseService);
+  private toastr = inject(ToastrService);
 
   /**
    * Get auction data from Supabase

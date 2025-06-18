@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { Message, Dealer } from '../../models/interfaces';
 import { getDealerName, getDealerId } from '../../utils/dealer-utils';
 
@@ -11,7 +12,7 @@ import { getDealerName, getDealerId } from '../../utils/dealer-utils';
   templateUrl: './messages-panel.component.html',
   styleUrls: ['./messages-panel.component.scss']
 })
-export class MessagesPanelComponent {
+export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
   @Input() messages: Message[] = [];
   @Input() selectedDealer: Dealer | null = null;
   @Input() dealers: Dealer[] = [];
@@ -20,29 +21,64 @@ export class MessagesPanelComponent {
 
   newMessage = '';
   showGlobalMessages = false;
+  
+  // Pre-computed properties
+  filteredMessages: Message[] = [];
+  messagePlaceholder = 'Type a message...';
+  dealerNamesMap = new Map<string, string>();
 
-  get filteredMessages(): Message[] {
+  // Destroy subject for subscription management
+  private destroy$ = new Subject<void>();
+
+  ngOnInit() {
+    this.updateDealerNamesMap();
+    this.updateFilteredMessages();
+    this.updateMessagePlaceholder();
+  }
+
+  ngOnChanges() {
+    this.updateDealerNamesMap();
+    this.updateFilteredMessages();
+    this.updateMessagePlaceholder();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private updateDealerNamesMap() {
+    this.dealerNamesMap.clear();
+    this.dealers.forEach(dealer => {
+      const dealerId = getDealerId(dealer);
+      const dealerName = getDealerName(dealer);
+      this.dealerNamesMap.set(dealerId, dealerName);
+    });
+  }
+
+  private updateFilteredMessages() {
     if (this.selectedDealer) {
       const dealerId = getDealerId(this.selectedDealer);
-      return this.messages.filter(msg => 
+      this.filteredMessages = this.messages.filter(msg => 
         msg.dealerId === dealerId || 
         (msg.alternate && !msg.isGlobal && msg.recipientId === dealerId)
       );
+    } else if (this.showGlobalMessages) {
+      this.filteredMessages = this.messages.filter(msg => msg.isGlobal);
+    } else {
+      this.filteredMessages = this.messages;
     }
-    
-    if (this.showGlobalMessages) {
-      return this.messages.filter(msg => msg.isGlobal);
-    }
-    
-    return this.messages;
   }
 
-  getMessagePlaceholder(): string {
+  private updateMessagePlaceholder() {
     if (this.selectedDealer) {
       const dealerName = getDealerName(this.selectedDealer);
-      return `Message ${dealerName}...`;
+      this.messagePlaceholder = `Message ${dealerName}...`;
+    } else {
+      this.messagePlaceholder = this.showGlobalMessages ? 
+        'Send announcement to all dealers...' : 
+        'Type a message...';
     }
-    return this.showGlobalMessages ? 'Send announcement to all dealers...' : 'Type a message...';
   }
 
   // Use imported utility functions but keep these as pass-through methods
@@ -55,27 +91,23 @@ export class MessagesPanelComponent {
     return getDealerId(dealer);
   }
 
-  // Get dealer name from dealer ID
+  // Get dealer name from dealer ID using the pre-computed map
   getDealerNameById(dealerId: string): string {
-    const dealer = this.dealers.find(d => {
-      const id = getDealerId(d);
-      return id === dealerId;
-    });
-    
-    if (dealer) {
-      return getDealerName(dealer);
-    }
-    return 'Unknown';
+    return this.dealerNamesMap.get(dealerId) || 'Unknown';
   }
 
   clearSelectedDealer() {
     this.showGlobalMessages = false;
     this.selectDealer.emit(null);
+    this.updateFilteredMessages();
+    this.updateMessagePlaceholder();
   }
 
   toggleGlobalMessages() {
     this.showGlobalMessages = true;
     this.selectDealer.emit(null);
+    this.updateFilteredMessages();
+    this.updateMessagePlaceholder();
   }
 
   onSendMessage() {
@@ -99,6 +131,8 @@ export class MessagesPanelComponent {
       if (dealer) {
         this.showGlobalMessages = false;
         this.selectDealer.emit(dealer);
+        this.updateFilteredMessages();
+        this.updateMessagePlaceholder();
       }
     }
   }

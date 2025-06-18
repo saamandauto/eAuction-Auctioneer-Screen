@@ -1,14 +1,14 @@
 <div class="app-container">
   <!-- Header -->
   <app-header
-    [auctionTitle]="auctionState.getValue('auctionTitle')"
-    [auctionId]="auctionState.getValue('auctionId')"
-    [auctionDate]="auctionState.getValue('auctionDate')"
-    [auctionCompany]="auctionState.getValue('auctionCompany')"
+    [auctionTitle]="(auctionState.select('auctionTitle') | async) ?? ''"
+    [auctionId]="(auctionState.select('auctionId') | async) ?? ''"
+    [auctionDate]="(auctionState.select('auctionDate') | async) ?? ''"
+    [auctionCompany]="(auctionState.select('auctionCompany') | async) ?? ''"
     [currentDateTime]="(auctionState.select('currentDateTime') | async) ?? ''"
     [isAuctionStarted]="(auctionState.select('isAuctionStarted') | async) ?? false"
     [isViewingLots]="(auctionState.select('isViewingLots') | async) ?? true"
-    [simulatedBiddingEnabled]="auctionState.getValue('simulatedBiddingEnabled')"
+    [simulatedBiddingEnabled]="(auctionState.select('simulatedBiddingEnabled') | async) ?? false"
     (startAuction)="startAuction()"
     (endAuction)="endAuction()"
     (toggleView)="toggleView()"
@@ -53,7 +53,7 @@
             [canControlLot]="(auctionState.select('canControlLot') | async) ?? false"
             [canUseHammer]="(auctionState.select('canUseHammer') | async) ?? false"
             [hasBids]="((auctionState.select('bids') | async)?.length ?? 0) > 0"
-            [skipConfirmations]="auctionState.getValue('skipConfirmations')"
+            [skipConfirmations]="(auctionState.select('skipConfirmations') | async) ?? false"
             [currentLot]="auctionState.select('currentLot') | async"
             [currentHighestBid]="auctionState.select('currentHighestBid') | async"
             [highestBid]="auctionState.select('highestBid') | async"
@@ -70,7 +70,7 @@
             [currentHighestBid]="auctionState.select('currentHighestBid') | async"
             [askingPrice]="(auctionState.select('askingPrice') | async) ?? 0"
             [startPrice]="(auctionState.select('startPrice') | async) ?? 0"
-            [lotPerformance]="getLotPerformance()">
+            [lotPerformance]="(lotPerformance$ | async) ?? { value: 0, text: '-' }">
           </app-current-status>
 
           <app-bidding
@@ -84,7 +84,7 @@
             [currentLot]="auctionState.select('currentLot') | async"
             [dealers]="(auctionState.select('dealers') | async) ?? []"
             [bids]="(auctionState.select('bids') | async) ?? []"
-            [simulatedBiddingEnabled]="auctionState.getValue('simulatedBiddingEnabled')"
+            [simulatedBiddingEnabled]="(auctionState.select('simulatedBiddingEnabled') | async) ?? false"
             (bidPlaced)="onBidPlaced($event)"
             (askingPriceChanged)="setAskingPrice($event)"
             (bidIncrementChanged)="adjustBidIncrement($event)"
@@ -133,7 +133,7 @@
   <!-- User List Dialogs -->
   <app-user-list-dialog
     [isOpen]="(auctionState.select('isViewersDialogOpen') | async) ?? false"
-    [users]="(lotUserActivityService.getViewers() | async) ?? []"
+    [users]="(viewers$ | async) ?? []"
     [type]="'Viewer'"
     [title]="'Current Viewers'"
     [description]="'A viewer is a dealer who has viewed the detail page of this lot.'"
@@ -142,7 +142,7 @@
 
   <app-user-list-dialog
     [isOpen]="(auctionState.select('isWatchersDialogOpen') | async) ?? false"
-    [users]="(lotUserActivityService.getWatchers() | async) ?? []"
+    [users]="(watchers$ | async) ?? []"
     [type]="'Watcher'"
     [title]="'Watchers'"
     [description]="'A watcher is a dealer who has marked this lot as a favorite.'"
@@ -151,7 +151,7 @@
 
   <app-user-list-dialog
     [isOpen]="(auctionState.select('isLeadsDialogOpen') | async) ?? false"
-    [users]="(lotUserActivityService.getLeads() | async) ?? []"
+    [users]="(leads$ | async) ?? []"
     [type]="'Lead'"
     [title]="'Leads'"
     [description]="'A lead is a dealer who has expressed interest in this lot and is on the lead list.'"
@@ -160,7 +160,7 @@
 
   <app-user-list-dialog
     [isOpen]="(auctionState.select('isOnlineDialogOpen') | async) ?? false"
-    [users]="(lotUserActivityService.getOnlineUsers() | async) ?? []"
+    [users]="(onlineUsers$ | async) ?? []"
     [type]="'Online'"
     [title]="'Online Users'"
     [description]="'These dealers are currently online and viewing this lot.'"

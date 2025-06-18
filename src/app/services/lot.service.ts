@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, from, catchError, of, tap, map, throwError, switchMap, forkJoin } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { LotDetails, LotStatus, Bid, LotFinalState, ViewerInfo } from '../models/interfaces';
@@ -8,7 +8,8 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class LotService {
-  constructor(private supabaseService: SupabaseService) {}
+  // Inject dependencies
+  private supabaseService = inject(SupabaseService);
 
   /**
    * Fetches all lots from the Supabase database, including their final state and bids if available
