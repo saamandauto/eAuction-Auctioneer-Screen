@@ -2,14 +2,14 @@
   <h4>Current Status</h4>
   <div class="price-summary">
     <div class="price-item">
-      <label>Highest Bid</label>
+      <span class="price-label">Highest Bid</span>
       <span class="price" [class.above-reserve]="isAboveReserve">
         {{ currentHighestBid | formatPrice }}
         <span class="reserve-met-indicator" *ngIf="isAboveReserve">Reserve Met</span>
       </span>
     </div>
     <div class="price-item">
-      <label>Asking Price</label>
+      <span class="price-label">Asking Price</span>
       <span class="price">
         {{ askingPrice | formatPrice }}
       </span>

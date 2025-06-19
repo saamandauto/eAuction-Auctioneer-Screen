@@ -1,8 +1,22 @@
-<div class="dialog-overlay" *ngIf="isOpen" (click)="handleClose()">
-  <div class="dialog" (click)="$event.stopPropagation()">
+<div class="dialog-overlay" 
+     *ngIf="isOpen" 
+     tabindex="0"
+     role="button"
+     aria-label="Close dialog"
+     (click)="handleClose()"
+     (keydown.enter)="handleClose()"
+     (keydown.space)="handleClose()"
+     (keydown.escape)="handleClose()">
+  <div class="dialog" 
+       tabindex="0"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="dialog-title"
+       (click)="$event.stopPropagation()"
+       (keydown)="$event.stopPropagation()">
     <div class="dialog-header">
       <div class="header-content">
-        <h3>Lot {{ lot?.lotNumber }} Results - {{ lot?.make }} {{ lot?.model }}</h3>
+        <h3 id="dialog-title">Lot {{ lot?.lotNumber }} Results - {{ lot?.make }} {{ lot?.model }}</h3>
         <!-- Moved status indicator to the header -->
         <div class="lot-result-status" [ngClass]="getStatusClass()" *ngIf="finalState?.status">
           {{ finalState?.status }}

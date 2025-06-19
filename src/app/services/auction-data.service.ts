@@ -61,7 +61,7 @@ export class AuctionDataService {
           createdAt: auction.created_at
         };
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error fetching auction data:', error);
         this.toastr.error('Failed to load auction data. Using default values.');
         // Return default auction data instead of throwing error
@@ -113,7 +113,7 @@ export class AuctionDataService {
           createdAt: savedAuction.created_at
         };
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error saving auction data:', error);
         this.toastr.error('Failed to save auction data');
         return throwError(() => error);

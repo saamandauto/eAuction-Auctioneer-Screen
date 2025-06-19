@@ -8,8 +8,6 @@ import { environment } from '../../environments/environment';
 export class SupabaseService {
   private static supabaseInstance: SupabaseClient | null = null;
 
-  constructor() {}
-
   /**
    * Get the singleton Supabase client instance
    * This ensures only one client exists in the entire application

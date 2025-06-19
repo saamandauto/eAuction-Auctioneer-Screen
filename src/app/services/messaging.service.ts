@@ -86,7 +86,7 @@ export class MessagingService {
           isRead: message.is_read
         }));
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error fetching messages:', error);
         return of([]);
       })
@@ -103,7 +103,7 @@ export class MessagingService {
         .eq('is_read', false)
     ).pipe(
       map(() => undefined),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error marking messages as read:', error);
         return of(undefined);
       })
@@ -145,7 +145,7 @@ export class MessagingService {
         })
         .select()
     ).pipe(
-      map(({ data, error }) => {
+      map(({ data: _data, error }) => {
         if (error) {
           throw error;
         }
@@ -155,7 +155,7 @@ export class MessagingService {
         
         return message;
       }),
-      catchError((error: any) => {
+      catchError((error: unknown) => {
         console.error('Error sending message:', error);
         this.toastr.error('Failed to send message. Please try again.');
         
@@ -184,7 +184,7 @@ export class MessagingService {
     if (!messageData.text.trim()) return;
     
     this.sendMessage(messageData).subscribe({
-      next: (message) => {
+      next: (_message) => {
         const selectedDealer = this.auctionState.getValue('selectedDealer');
         
         if (messageData.isGlobal && !selectedDealer) {

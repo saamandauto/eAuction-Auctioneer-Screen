@@ -134,7 +134,7 @@ export class DealerService {
         // Transform all DatabaseDealer objects to unified Dealer format
         return this.transformDealersFromDatabase(databaseDealers);
       }),
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('Error in getDealers:', err);
         const combinedFallback = [...this.fallbackDealers, ...this.mockBidUsers];
         return of(this.transformDealersFromDatabase(combinedFallback));

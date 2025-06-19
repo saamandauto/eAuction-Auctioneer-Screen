@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
@@ -14,7 +14,7 @@ import { LocalizationService } from '../../services/localization.service';
   templateUrl: './bid-controls.component.html',
   styleUrls: ['./bid-controls.component.scss']
 })
-export class BidControlsComponent implements OnInit, OnDestroy {
+export class BidControlsComponent implements OnInit, OnDestroy, OnChanges {
   @Input() canControlLot = false;
   @Input() startPrice = 0;
   @Input() currentHighestBid: number | null = null;
@@ -57,6 +57,14 @@ export class BidControlsComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  ngOnChanges(_changes: SimpleChanges) {
+    // Initialize localAskingPrice when askingPrice changes
+    if (!this.userInputModified) {
+      this.localAskingPrice = this.askingPrice;
+      this.newBidAmount = this.askingPrice;
+    }
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -103,14 +111,6 @@ export class BidControlsComponent implements OnInit, OnDestroy {
   get minBidAmount(): number {
     // Use asking price as the minimum bid amount
     return this.askingPrice;
-  }
-
-  ngOnChanges() {
-    // Initialize localAskingPrice when askingPrice changes
-    if (!this.userInputModified) {
-      this.localAskingPrice = this.askingPrice;
-      this.newBidAmount = this.askingPrice;
-    }
   }
 
   onSetAskingPrice() {

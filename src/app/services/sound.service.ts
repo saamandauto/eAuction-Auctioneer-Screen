@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+// Define interface for extended Window with webkit audio context
+interface ExtendedWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -10,8 +15,9 @@ export class SoundService {
   
   constructor() {
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    } catch (error) {
+      const extendedWindow = window as ExtendedWindow;
+      this.audioContext = new (window.AudioContext || extendedWindow.webkitAudioContext || AudioContext)();
+    } catch (_error) {
       // Web Audio API is not supported in this browser
     }
   }
@@ -48,7 +54,7 @@ export class SoundService {
       // Start and stop oscillator
       oscillator.start();
       oscillator.stop(this.audioContext.currentTime + 0.3);
-    } catch (error) {
+    } catch (_error) {
       // Error playing bid notification sound
     }
   }

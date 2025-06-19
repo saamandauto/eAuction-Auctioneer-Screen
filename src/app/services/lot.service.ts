@@ -38,7 +38,7 @@ export class LotService {
         const dbLots = data as DatabaseLot[];
         return dbLots.map(lot => this.mapDbLotToLotDetails(lot));
       }),
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('Error fetching lots:', err);
         return of([]);
       })
@@ -99,7 +99,7 @@ export class LotService {
           lastActive: item.last_active
         }));
       }),
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error(`Error in getLotUserActivity for lot ${lotNumber}:`, err);
         return of([]);
       })
@@ -155,8 +155,8 @@ export class LotService {
         const dbLots = data as DatabaseLot[];
         return this.mapDbLotToLotDetails(dbLots[0]);
       }),
-      catchError((err: any) => {
-        return throwError(() => new Error(`Failed to update lot in Supabase: ${err.message}`));
+      catchError((err: unknown) => {
+        return throwError(() => new Error(`Failed to update lot in Supabase: ${String(err)}`));
       })
     );
   }
@@ -233,7 +233,7 @@ export class LotService {
               // Return the updated lot
               return lot;
             }),
-            catchError((bidsError: any) => {
+            catchError((bidsError: unknown) => {
               // Even if bids fail to save, return the lot
               console.error('Error saving bids:', bidsError);
               return of(lot);
@@ -244,8 +244,8 @@ export class LotService {
           return of(lot);
         }
       }),
-      catchError((err: any) => {
-        return throwError(() => new Error(`Failed to save lot final state: ${err.message}`));
+      catchError((err: unknown) => {
+        return throwError(() => new Error(`Failed to save lot final state: ${String(err)}`));
       })
     );
   }
@@ -254,12 +254,12 @@ export class LotService {
    * Calls the seed-lots Supabase function to populate the database with initial lot data
    * @returns Observable with the result of the operation
    */
-  seedLots(): Observable<any> {
+  seedLots(): Observable<unknown> {
     const anon_key = environment.supabase.anonKey;
     const supabase_url = environment.supabase.url;
     
     return from(
-      fetch(
+      window.fetch(
         `${supabase_url}/functions/v1/seed-lots`,
         {
           method: 'POST',
@@ -269,7 +269,7 @@ export class LotService {
           }
         }
       )
-      .then(async response => {
+      .then(async (response: Response) => {
         if (!response.ok) {
           const errorText = await response.text();
           let errorMessage = `HTTP error! status: ${response.status}`;
@@ -296,9 +296,9 @@ export class LotService {
         }
         return result;
       }),
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         // Return a proper error instead of a fake success object
-        return throwError(() => new Error(`Failed to seed lots in Supabase: ${err.message}`));
+        return throwError(() => new Error(`Failed to seed lots in Supabase: ${String(err)}`));
       })
     );
   }
@@ -307,12 +307,12 @@ export class LotService {
    * Calls the seed-lot-user-activity Supabase function to populate user activity data
    * @returns Observable with the result of the operation
    */
-  seedLotUserActivity(): Observable<any> {
+  seedLotUserActivity(): Observable<unknown> {
     const anon_key = environment.supabase.anonKey;
     const supabase_url = environment.supabase.url;
     
     return from(
-      fetch(
+      window.fetch(
         `${supabase_url}/functions/v1/seed-lot-user-activity`,
         {
           method: 'POST',
@@ -322,7 +322,7 @@ export class LotService {
           }
         }
       )
-      .then(async response => {
+      .then(async (response: Response) => {
         if (!response.ok) {
           const errorText = await response.text();
           let errorMessage = `HTTP error! status: ${response.status}`;
@@ -349,8 +349,8 @@ export class LotService {
         }
         return result;
       }),
-      catchError((err: any) => {
-        return throwError(() => new Error(`Failed to seed lot user activity in Supabase: ${err.message}`));
+      catchError((err: unknown) => {
+        return throwError(() => new Error(`Failed to seed lot user activity in Supabase: ${String(err)}`));
       })
     );
   }
@@ -453,7 +453,7 @@ export class LotService {
           country: bid.country
         }));
       }),
-      catchError((err: any) => {
+      catchError((err: unknown) => {
         console.error('Error fetching bids:', err);
         return of([]);
       })

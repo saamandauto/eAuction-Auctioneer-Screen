@@ -15,7 +15,7 @@ export class SeedService {
   private http = inject(HttpClient);
   private toastr = inject(ToastrService);
 
-  seedLots(): Observable<any> {
+  seedLots(): Observable<unknown> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-lots`;
     
     return this.http.post(functionUrl, {}, {
@@ -24,7 +24,7 @@ export class SeedService {
         'Content-Type': 'application/json'
       }
     }).pipe(
-      tap(response => {
+      tap(_response => {
         this.toastr.success('Lots seeded successfully');
       }),
       catchError(error => {
@@ -34,7 +34,7 @@ export class SeedService {
     );
   }
 
-  seedMessages(): Observable<any> {
+  seedMessages(): Observable<unknown> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-messages`;
     
     return this.http.post(functionUrl, {}, {
@@ -43,7 +43,7 @@ export class SeedService {
         'Content-Type': 'application/json'
       }
     }).pipe(
-      tap(response => {
+      tap(_response => {
         this.toastr.success('Messages seeded successfully');
       }),
       catchError(error => {
@@ -53,7 +53,7 @@ export class SeedService {
     );
   }
 
-  seedLotUserActivity(): Observable<any> {
+  seedLotUserActivity(): Observable<unknown> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-lot-user-activity`;
     
     return this.http.post(functionUrl, {}, {
@@ -62,7 +62,7 @@ export class SeedService {
         'Content-Type': 'application/json'
       }
     }).pipe(
-      tap(response => {
+      tap(_response => {
         this.toastr.success('Lot user activity data seeded successfully');
       }),
       catchError(error => {
@@ -72,7 +72,7 @@ export class SeedService {
     );
   }
   
-  seedAuctionData(): Observable<any> {
+  seedAuctionData(): Observable<unknown> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-auction-data`;
     
     return this.http.post(functionUrl, {}, {
@@ -81,7 +81,7 @@ export class SeedService {
         'Content-Type': 'application/json'
       }
     }).pipe(
-      tap(response => {
+      tap(_response => {
         this.toastr.success('Auction data seeded successfully');
       }),
       catchError(error => {
@@ -91,7 +91,7 @@ export class SeedService {
     );
   }
 
-  seedContent(): Observable<any> {
+  seedContent(): Observable<unknown> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-content`;
     
     return this.http.post(functionUrl, {}, {
@@ -100,7 +100,7 @@ export class SeedService {
         'Content-Type': 'application/json'
       }
     }).pipe(
-      tap(response => {
+      tap(_response => {
         this.toastr.success('Localization content seeded successfully');
       }),
       catchError(error => {
@@ -110,7 +110,7 @@ export class SeedService {
     );
   }
 
-  seedHeaderContent(): Observable<any> {
+  seedHeaderContent(): Observable<unknown> {
     const functionUrl = `${this.supabaseUrl}/functions/v1/seed-header-content`;
     
     return this.http.post(functionUrl, {}, {
@@ -119,7 +119,7 @@ export class SeedService {
         'Content-Type': 'application/json'
       }
     }).pipe(
-      tap(response => {
+      tap(_response => {
         this.toastr.success('Header content seeded successfully');
       }),
       catchError(error => {

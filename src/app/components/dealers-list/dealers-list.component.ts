@@ -178,9 +178,10 @@ export class DealersListComponent implements OnInit, OnChanges, OnDestroy {
     this.expanded = !this.expanded;
   }
 
-  private getDealerTooltip(dealer: Dealer, status: any): string {
+  private getDealerTooltip(dealer: Dealer, status: unknown): string {
     const dealerId = getDealerId(dealer);
-    const lastActive = status ? `\nLast Active: ${status.lastActive}` : '';
+    const dealerStatus = status as { lastActive?: string } | null;
+    const lastActive = dealerStatus?.lastActive ? `\nLast Active: ${dealerStatus.lastActive}` : '';
     const lastBuy = dealer.lastBuy ? `\nLast Buy: ${dealer.lastBuy}` : '';
     const lastLogin = dealer.lastLogin ? `\nLast Login: ${dealer.lastLogin}` : '';
     

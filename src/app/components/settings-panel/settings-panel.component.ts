@@ -159,10 +159,10 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.seedService.seedAuctionData()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (_response) => {
           this.isSeedingAuctionData = false;
         },
-        error: (error) => {
+        error: (_error) => {
           this.isSeedingAuctionData = false;
         }
       });
@@ -173,10 +173,10 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.seedService.seedLots()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (_response) => {
           this.isSeedingLots = false;
         },
-        error: (error) => {
+        error: (_error) => {
           this.isSeedingLots = false;
         }
       });
@@ -187,10 +187,10 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.seedService.seedMessages()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (_response) => {
           this.isSeedingMessages = false;
         },
-        error: (error) => {
+        error: (_error) => {
           this.isSeedingMessages = false;
         }
       });
@@ -201,10 +201,10 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.seedService.seedLotUserActivity()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (_response) => {
           this.isSeedingActivity = false;
         },
-        error: (error) => {
+        error: (_error) => {
           this.isSeedingActivity = false;
         }
       });
@@ -215,12 +215,12 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.seedService.seedContent()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (_response) => {
           this.isSeedingContent = false;
           // Refresh the localization content after seeding
           this.localizationService.refreshContent();
         },
-        error: (error) => {
+        error: (_error) => {
           this.isSeedingContent = false;
         }
       });
@@ -231,12 +231,12 @@ export class SettingsPanelComponent implements OnInit, OnDestroy {
     this.seedService.seedHeaderContent()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (_response) => {
           this.isSeedingHeaderContent = false;
           // Refresh the localization content after seeding
           this.localizationService.refreshContent();
         },
-        error: (error) => {
+        error: (_error) => {
           this.isSeedingHeaderContent = false;
         }
       });

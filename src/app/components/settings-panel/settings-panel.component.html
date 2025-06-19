@@ -1,7 +1,21 @@
-<div class="dialog-overlay" *ngIf="isOpen" (click)="onClose()">
-  <div class="dialog" (click)="$event.stopPropagation()">
+<div class="dialog-overlay" 
+     *ngIf="isOpen" 
+     tabindex="0"
+     role="button"
+     aria-label="Close settings"
+     (click)="onClose()"
+     (keydown.enter)="onClose()"
+     (keydown.space)="onClose()"
+     (keydown.escape)="onClose()">
+  <div class="dialog" 
+       tabindex="0"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="settings-title"
+       (click)="$event.stopPropagation()"
+       (keydown)="$event.stopPropagation()">
     <div class="dialog-header">
-      <h3>Settings</h3>
+      <h3 id="settings-title">Settings</h3>
       <button class="button button-icon" (click)="onClose()">
         <i class="ri-close-line"></i>
       </button>

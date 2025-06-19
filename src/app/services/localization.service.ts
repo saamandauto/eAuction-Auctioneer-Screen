@@ -73,8 +73,8 @@ export class LocalizationService {
       next: (auctionData) => {
         this.setupLocalizationSettings(auctionData.defaultLocale, auctionData.defaultCurrency);
       },
-      error: (error) => {
-        console.error('Error loading auction data for localization:', error);
+      error: (_error) => {
+        console.error('Error loading auction data for localization:', _error);
         // Use fallback defaults and continue
         this.setupLocalizationSettings('en_GB', 'GBP');
       }
@@ -115,7 +115,7 @@ export class LocalizationService {
    * Set up subscription to reload content when locale changes
    */
   private setupLocaleChangeSubscription(): void {
-    this.currentLocale.subscribe(locale => {
+    this.currentLocale.subscribe(_locale => {
       if (this.isInitialized) {
         this.loadContent();
       }
@@ -281,8 +281,8 @@ export class LocalizationService {
           this.contentCache.set(cacheKey, item.value);
         });
       }),
-      catchError(error => {
-        console.error('Error loading localization content:', error);
+      catchError(_error => {
+        console.error('Error loading localization content:', _error);
         this.toastr.error('Failed to load localization content');
         return of([]);
       })
@@ -314,7 +314,7 @@ export class LocalizationService {
       if (stored && this.availableLanguages.some(lang => lang.code === stored)) {
         return stored;
       }
-    } catch (error) {
+    } catch (_error) {
       // localStorage might not be available in some environments
     }
     return null;
@@ -326,7 +326,7 @@ export class LocalizationService {
   private storeLocale(locale: string): void {
     try {
       localStorage.setItem(this.STORAGE_KEY, locale);
-    } catch (error) {
+    } catch (_error) {
       // localStorage might not be available in some environments
     }
   }
@@ -340,7 +340,7 @@ export class LocalizationService {
       if (stored && this.availableCurrencies.some(curr => curr.code === stored)) {
         return stored;
       }
-    } catch (error) {
+    } catch (_error) {
       // localStorage might not be available in some environments
     }
     return null;
@@ -352,7 +352,7 @@ export class LocalizationService {
   private storeCurrency(currencyCode: string): void {
     try {
       localStorage.setItem(this.CURRENCY_STORAGE_KEY, currencyCode);
-    } catch (error) {
+    } catch (_error) {
       // localStorage might not be available in some environments
     }
   }

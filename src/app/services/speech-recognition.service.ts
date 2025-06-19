@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
@@ -30,7 +30,7 @@ interface SpeechRecognitionErrorEvent extends Event {
 @Injectable({
   providedIn: 'root'
 })
-export class SpeechRecognitionService {
+export class SpeechRecognitionService implements OnDestroy {
   private recognition: SpeechRecognition | null = null; // Changed from any to SpeechRecognition | null
   private isListening = new BehaviorSubject<boolean>(false);
   private commandDetected = new BehaviorSubject<string>('');
@@ -100,16 +100,16 @@ export class SpeechRecognitionService {
         if (this.isListening.value && this.isAltKeyHeld) {
           try {
             // Check if recognition is already running before starting
-            setTimeout(() => {
+            window.setTimeout(() => {
               if (this.isListening.value && this.isAltKeyHeld && this.recognition) {
                 try {
                   this.recognition.start();
-                } catch (error) {
+                } catch (_error) {
                   this.isListening.next(false);
                 }
               }
             }, 300); // Brief pause before restart
-          } catch (error) {
+          } catch (_error) {
             this.isListening.next(false);
           }
         } else {
@@ -129,7 +129,7 @@ export class SpeechRecognitionService {
           
           // Clear any existing timeout before setting a new one
           if (this.retryTimeout) {
-            clearTimeout(this.retryTimeout);
+            window.clearTimeout(this.retryTimeout);
             this.retryTimeout = null;
           }
           
@@ -240,7 +240,7 @@ export class SpeechRecognitionService {
     
     // Clear any existing timeout
     if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout);
+      window.clearTimeout(this.retryTimeout);
       this.retryTimeout = null;
     }
     
@@ -248,12 +248,12 @@ export class SpeechRecognitionService {
       // Make sure recognition is stopped before starting
       try {
         this.recognition.stop();
-      } catch (error) {
+      } catch (_error) {
         // Ignore errors when trying to stop recognition that might not be running
       }
       
       // Small delay to ensure complete stop before starting
-      setTimeout(() => {
+      window.setTimeout(() => {
         try {
           this.recognition?.start();
           
@@ -262,12 +262,12 @@ export class SpeechRecognitionService {
             this.toastr.success('Speech recognition activated. Try saying a command like "Start auction".');
             this.hasShownActivationToast = true;
           }
-        } catch (error) {
+        } catch (_error) {
           this.toastr.error('Failed to start speech recognition.');
           this.isListening.next(false);
         }
       }, 300);
-    } catch (error) {
+    } catch (_error) {
       this.toastr.error('Failed to start speech recognition.');
       this.isListening.next(false);
     }
@@ -276,7 +276,7 @@ export class SpeechRecognitionService {
   private stopListening(): void {
     // Clear any pending retry timeout
     if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout);
+      window.clearTimeout(this.retryTimeout);
       this.retryTimeout = null;
     }
     
@@ -286,7 +286,7 @@ export class SpeechRecognitionService {
     if (this.recognition) {
       try {
         this.recognition.stop();
-      } catch (error) {
+      } catch (_error) {
         // Already set listening to false, so no need to do it again
       }
     }

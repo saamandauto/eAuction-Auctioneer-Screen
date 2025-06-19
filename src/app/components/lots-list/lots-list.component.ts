@@ -80,17 +80,17 @@ export class LotsListComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     const term = this.searchTerm.toLowerCase();
-    const filtered = this.lots.filter(lot => 
-      lot.lotNumber.toString().includes(term) ||
-      lot.make.toLowerCase().includes(term) ||
-      lot.model.toLowerCase().includes(term) ||
-      (lot.status && lot.status.toLowerCase().includes(term))
+    const filtered = this.lots.filter(_lot => 
+      _lot.lotNumber.toString().includes(term) ||
+      _lot.make.toLowerCase().includes(term) ||
+      _lot.model.toLowerCase().includes(term) ||
+      (_lot.status && _lot.status.toLowerCase().includes(term))
     );
     
     this.filteredLotsSubject.next(filtered);
   }
 
-  canSelectLot(lot: LotDetails): boolean {
+  canSelectLot(_lot: LotDetails): boolean {
     return this.currentLotStatus !== LotStatus.ACTIVE;
   }
 

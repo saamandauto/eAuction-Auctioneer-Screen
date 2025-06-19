@@ -31,7 +31,6 @@ export class AuctionEventService {
   constructor() {
     // Subscribe to bids from the bidding service
     this.biddingService.getBids().subscribe(bid => {
-      console.log('Received simulated bid:', bid);
       this.onBidPlaced(bid);
     });
     
@@ -41,13 +40,11 @@ export class AuctionEventService {
     
     // Listen for changes to the simulated bidding setting
     this.auctionState.select('simulatedBiddingEnabled').subscribe(enabled => {
-      console.log('Simulated bidding toggled:', enabled);
       this.handleSimulatedBiddingToggle(enabled);
     });
 
     // Listen for lot status changes to restart simulation when lot becomes active
     this.auctionState.select('lotStatus').subscribe(lotStatus => {
-      console.log('Lot status changed to:', lotStatus);
       
       if (lotStatus === LotStatus.ACTIVE) {
         // Lot became active, restart simulation if enabled
@@ -57,7 +54,6 @@ export class AuctionEventService {
                  lotStatus === LotStatus.NO_SALE || 
                  lotStatus === LotStatus.WITHDRAWN) {
         // Lot became inactive, stop simulation
-        console.log('Stopping simulation because lot status is:', lotStatus);
         this.biddingService.stopSimulation();
       }
     });
@@ -73,7 +69,6 @@ export class AuctionEventService {
       const lotStatus = this.auctionState.getValue('lotStatus');
       
       if (lotStatus === LotStatus.ACTIVE && currentLot) {
-        console.log('Starting simulation immediately - lot is active');
         this.startSimulation();
       } else {
         // Provide feedback about why simulation isn't starting
@@ -84,7 +79,6 @@ export class AuctionEventService {
         }
       }
     } else {
-      console.log('Stopping simulation');
       this.biddingService.stopSimulation();
     }
   }
@@ -93,7 +87,6 @@ export class AuctionEventService {
   private startSimulation(): void {
     const currentLot = this.auctionState.getValue('currentLot');
     if (!currentLot) {
-      console.warn('Cannot start simulation - no current lot');
       return;
     }
 
@@ -102,15 +95,6 @@ export class AuctionEventService {
     const startPrice = this.auctionState.getValue('startPrice');
     const bidIncrement = this.auctionState.getValue('bidIncrement');
     const askingPrice = this.auctionState.getValue('askingPrice');
-
-    console.log('Starting simulation with params:', {
-      dealers: dealers.length,
-      currentHighestBid,
-      startPrice,
-      bidIncrement,
-      reservePrice: currentLot.reservePrice,
-      askingPrice
-    });
 
     this.biddingService.startSimulation(
       dealers,
@@ -127,7 +111,6 @@ export class AuctionEventService {
   public restartSimulationIfEnabled(): void {
     const simulatedBiddingEnabled = this.auctionState.getValue('simulatedBiddingEnabled');
     if (simulatedBiddingEnabled) {
-      console.log('Restarting simulation because lot became active');
       this.startSimulation();
     }
   }

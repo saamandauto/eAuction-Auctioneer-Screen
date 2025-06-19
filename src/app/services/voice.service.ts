@@ -4,6 +4,11 @@ import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../environments/environment';
 import { LocalizationService } from './localization.service';
 
+// Define interface for extended Window with webkit audio context
+interface ExtendedWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -29,8 +34,9 @@ export class VoiceService {
   constructor() {
     // Initialize AudioContext when service is created
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    } catch (error) {
+      const extendedWindow = window as ExtendedWindow;
+      this.audioContext = new (window.AudioContext || extendedWindow.webkitAudioContext || AudioContext)();
+    } catch (_error) {
       // Web Audio API is not supported in this browser
     }
   }
@@ -246,7 +252,7 @@ export class VoiceService {
         try {
           const parsed = JSON.parse(errorData);
           errorMessage = parsed.error || 'Unknown error';
-        } catch (e) {
+        } catch (_e) {
           errorMessage = errorData || `HTTP error ${response.status}`;
         }
         throw new Error(`Edge function error: ${errorMessage}`);

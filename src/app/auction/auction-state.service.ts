@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, of, tap, map, combineLatest } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, of, tap, combineLatest } from 'rxjs';
 import { Bid, Dealer, LotDetails, Message } from '../models/interfaces';
 import { LotStatus, HammerState } from '../models/enums';
 import { DealerService } from '../services/dealer.service';
@@ -77,16 +77,11 @@ export class AuctionStateService {
     this.loadAuctionData();
     
     // Load dealers first
-    this.loadDealers().subscribe(dealers => {
+    this.loadDealers().subscribe(_dealers => {
       // After dealers are loaded, load lots
       this.loadLots();
     });
-
-    // Set up timer for current date-time
-    setInterval(() => {
-      this.currentDateTime$.next(new Date().toLocaleString('en-GB'));
-    }, 1000);
-    
+   
     // Set up listener for bid and current lot changes to update canUseHammer status
     combineLatest([
       this.currentHighestBid$,
@@ -159,11 +154,9 @@ export class AuctionStateService {
   private loadDealers(): Observable<Dealer[]> {
     return this.dealerService.getDealers().pipe(
       tap(dealers => {
-        console.log(`Loaded ${dealers.length} dealers from database/fallback`);
         this.dealers$.next(dealers);
       }),
-      catchError(error => {
-        console.error('Error loading dealers:', error);
+      catchError(_error => {
         return of([]);
       })
     );
@@ -175,8 +168,7 @@ export class AuctionStateService {
       tap(lots => {
         this.processLoadedLots(lots);
       }),
-      catchError(error => {
-        console.error('Error loading lots:', error);
+      catchError(_error => {
         return of([]);
       })
     ).subscribe();
@@ -184,7 +176,6 @@ export class AuctionStateService {
   
   // Helper method to process loaded lots
   private processLoadedLots(lots: LotDetails[]): void {
-    console.log(`Loaded ${lots.length} lots from database`);
     this.lots$.next(lots);
     
     // Initialize currentLot
@@ -501,10 +492,10 @@ export class AuctionStateService {
     
     // Then update in Supabase
     this.lotService.updateLot(updatedLot).subscribe(
-      updatedLotFromDb => {
+      _updatedLotFromDb => {
         // Lot updated in Supabase
       },
-      error => {
+      _error => {
         // Error updating lot in Supabase
       }
     );

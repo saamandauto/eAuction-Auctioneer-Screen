@@ -61,10 +61,10 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
         // Filter messages based on current state
         let filteredMessages: Message[];
         if (selectedDealer) {
-          const dealerId = getDealerId(selectedDealer);
+          const _dealerId = getDealerId(selectedDealer);
           filteredMessages = messages.filter(msg => 
-            msg.dealerId === dealerId || 
-            (msg.alternate && !msg.isGlobal && msg.recipientId === dealerId)
+            msg.dealerId === _dealerId || 
+            (msg.alternate && !msg.isGlobal && msg.recipientId === _dealerId)
           );
         } else if (showGlobalMessages) {
           filteredMessages = messages.filter(msg => msg.isGlobal);
@@ -124,7 +124,7 @@ export class MessagesPanelComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   // Get dealer name from dealer ID using the pre-computed map
-  getDealerNameById(dealerId: string): string {
+  getDealerNameById(_dealerId: string): string {
     // This will be handled by the viewState$ observable
     return 'Unknown'; // Fallback - actual value comes from template
   }

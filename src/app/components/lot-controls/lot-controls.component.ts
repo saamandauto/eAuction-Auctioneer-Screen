@@ -108,14 +108,14 @@ export class LotControlsComponent implements OnChanges, OnDestroy {
       map(([
         showShortcutsInUI,
         lotStatus,
-        hammerState,
-        canControlLot,
+        _hammerState,
+        _canControlLot,
         canUseHammer,
         hasBids,
-        skipConfirmations,
-        currentLot,
-        currentHighestBid,
-        highestBid
+        _skipConfirmations,
+        _currentLot,
+        _currentHighestBid,
+        _highestBid
       ]) => ({
         showShortcutsInUI,
         canStartLot: lotStatus === LotStatus.PENDING,
@@ -292,7 +292,7 @@ export class LotControlsComponent implements OnChanges, OnDestroy {
 
   cancelWithdrawalCountdown() {
     if (this.withdrawCountdownTimer !== null) {
-      clearTimeout(this.withdrawCountdownTimer);
+      window.clearTimeout(this.withdrawCountdownTimer);
       this.withdrawCountdownTimer = null;
     }
     this.stopDotAnimation();
@@ -456,7 +456,7 @@ export class LotControlsComponent implements OnChanges, OnDestroy {
 
   private stopDotAnimation() {
     if (this.animationTimer !== null) {
-      clearTimeout(this.animationTimer);
+      window.clearTimeout(this.animationTimer);
       this.animationTimer = null;
       this.dots = '';
     }

@@ -41,7 +41,7 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   @Output() lotsReordered = new EventEmitter<LotDetails[]>();
   
   // Editing state
-  editMode: {[key: number]: {reservePrice: boolean, initialAskingPrice: boolean}} = {};
+  editMode: Record<number, Record<string, boolean>> = {};
   
   // Sorting state
   sortColumn = 'lotNumber';
@@ -214,24 +214,24 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.editMode[lotNumber]) {
       this.editMode[lotNumber] = { reservePrice: false, initialAskingPrice: false };
     }
-    this.editMode[lotNumber][field as keyof typeof this.editMode[number]] = true;
+    this.editMode[lotNumber][field] = true;
   }
   
   saveEdit(lot: LotDetails, field: string, value: number): void {
     if (this.editMode[lot.lotNumber]) {
-      this.editMode[lot.lotNumber][field as keyof typeof this.editMode[number]] = false;
+      this.editMode[lot.lotNumber][field] = false;
       this.lotUpdated.emit({lotNumber: lot.lotNumber, field, value});
     }
   }
   
   cancelEdit(lotNumber: number, field: string): void {
     if (this.editMode[lotNumber]) {
-      this.editMode[lotNumber][field as keyof typeof this.editMode[number]] = false;
+      this.editMode[lotNumber][field] = false;
     }
   }
   
   isEditing(lotNumber: number, field: string): boolean {
-    return this.editMode[lotNumber]?.[field as keyof typeof this.editMode[number]] || false;
+    return this.editMode[lotNumber]?.[field] || false;
   }
   
   // Dialog methods - now handle keyboard events with same logic as click
