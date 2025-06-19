@@ -15,8 +15,8 @@ import { AuctionDetailsFeatureComponent } from './features/auction-details/aucti
 import { DealersListComponent } from './components/dealers-list/dealers-list.component';
 import { PlannedLotsComponent } from './components/planned-lots/planned-lots.component';
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
-import { AuctionEventService } from './auction/auction-event.service';
 import { AuctionStateService } from './auction/auction-state.service';
+import { AuctionEventService } from './auction/auction-event.service';
 import { LotStatus, HammerState } from './models/enums';
 import { KeyboardShortcutService } from './services/keyboard-shortcut.service';
 import { ToastrService } from 'ngx-toastr';
@@ -128,7 +128,7 @@ export class AppComponent implements OnDestroy {
   // Inject dependencies using inject() pattern
   public auctionState = inject(AuctionStateService);
   public lotUserActivityService = inject(LotUserActivityService);
-  private auctionEventService = inject(AuctionEventService);
+  private auctionEventService = inject(AuctionEventService); // Add this injection to ensure service is initialized
   private auctionService = inject(AuctionService);
   private auctionLifecycleService = inject(AuctionLifecycleService);
   private lotManagementService = inject(LotManagementService);

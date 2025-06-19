@@ -1,5 +1,27 @@
-/* Import all style modules */
-@import 'ngx-toastr/toastr';
+/* Import Sass color module for modern color functions */
+@use 'sass:color';
+
+/* Import all style modules using @use instead of deprecated @import */
+@use 'ngx-toastr/toastr';
+
+/* Base styles */
+@use 'base/reset';
+@use 'base/typography';
+
+/* Components */
+@use 'components/buttons';
+@use 'components/panels';
+@use 'components/tables';
+@use 'components/status';
+@use 'components/vehicle';
+@use 'components/controls';
+@use 'components/messages';
+@use 'components/dialog';
+@use 'components/search';
+@use 'components/misc';
+
+/* Layout */
+@use 'layout/grid';
 
 /* Override toastr colors */
 .toast-warning {
@@ -9,25 +31,6 @@
 .toast-error {
   background-color: #ff5722 !important;
 }
-
-/* Base styles */
-@import 'base/reset';
-@import 'base/typography';
-
-/* Components */
-@import 'components/buttons';
-@import 'components/panels';
-@import 'components/tables';
-@import 'components/status';
-@import 'components/vehicle';
-@import 'components/controls';
-@import 'components/messages';
-@import 'components/dialog';
-@import 'components/search';
-@import 'components/misc';
-
-/* Layout */
-@import 'layout/grid';
 
 /* Global styles */
 :root {
@@ -114,14 +117,14 @@
   .save-button {
     color: #28a745;
     &:hover {
-      color: darken(#28a745, 10%);
+      color: color.adjust(#28a745, $lightness: -10%);
     }
   }
   
   .cancel-button {
     color: #dc3545;
     &:hover {
-      color: darken(#dc3545, 10%);
+      color: color.adjust(#dc3545, $lightness: -10%);
     }
   }
 }

@@ -1,30 +1,28 @@
 import { Injectable, inject } from '@angular/core';
 import { Subject, Subscription, timer } from 'rxjs';
-import { filter } from 'rxjs/operators';
-import { Dealer, Bid, LotDetails } from '../models/interfaces';
+import { filter, tap } from 'rxjs/operators';
+import { Dealer, Bid } from '../models/interfaces';
 import { AuctionService } from './auction.service';
-import { SoundService } from './sound.service';
 import { getDealerName, getDealerId } from '../utils/dealer-utils';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BiddingService {
-  private biddingEnabled = false; // Removed ': boolean'
+  private biddingEnabled = false;
   private currentBidding$: Subscription | null = null;
   private bidSubject = new Subject<Bid>();
   
   // Track current state
-  private currentBidAmount = 0; // Removed ': number'
-  private currentBidIncrement = 0; // Removed ': number'
-  private currentReservePrice = 0; // Removed ': number'
-  private currentAskingPrice = 0; // Removed ': number'
+  private currentBidAmount = 0;
+  private currentBidIncrement = 0;
+  private currentReservePrice = 0;
+  private currentAskingPrice = 0;
   private availableDealers: Dealer[] = [];
-  private totalSimulatedBids = 0; // Track total simulated bids across all lots // Removed ': number'
+  private totalSimulatedBids = 0; // Track total simulated bids across all lots
 
   // Inject dependencies
   private auctionService = inject(AuctionService);
-  private soundService = inject(SoundService);
 
   getBids() {
     return this.bidSubject.asObservable();
@@ -37,7 +35,10 @@ export class BiddingService {
     reservePrice: number,
     askingPrice?: number
   ) {
+    console.log('Starting simulation with enabled:', this.biddingEnabled);
+    
     if (!this.biddingEnabled) {
+      console.log('Simulation not enabled, skipping start');
       return;
     }
     
@@ -53,29 +54,48 @@ export class BiddingService {
     // Filter out bid users
     this.availableDealers = dealers.filter(d => d.type !== 'Bid User 1' && d.type !== 'Bid User 2');
     
+    console.log('Simulation parameters:', {
+      dealers: this.availableDealers.length,
+      currentBidAmount: this.currentBidAmount,
+      bidIncrement: this.currentBidIncrement,
+      reservePrice: this.currentReservePrice,
+      askingPrice: this.currentAskingPrice
+    });
+    
     if (this.availableDealers.length === 0) {
+      console.warn('No available dealers for simulation');
       return;
     }
 
-    // Create a timer that starts immediately (0) and repeats every 1-3 seconds
-    this.currentBidding$ = timer(0, this.getRandomInterval()).pipe(
+    // Create a timer that starts after a short delay and repeats every 1-3 seconds
+    this.currentBidding$ = timer(1000, this.getRandomInterval()).pipe(
       filter(() => {
         const shouldContinue = this.shouldContinueBidding();
+        if (!shouldContinue) {
+          console.log('Stopping simulation - conditions no longer met');
+        }
         return shouldContinue;
+      }),
+      tap(() => {
+        console.log('Generating new simulated bid...');
       })
     ).subscribe(() => {
       this.generateNewBid();
     });
+
+    console.log('Simulation timer started');
   }
 
   stopSimulation() {
     if (this.currentBidding$) {
+      console.log('Stopping simulation timer');
       this.currentBidding$.unsubscribe();
       this.currentBidding$ = null;
     }
   }
 
   setEnabled(enabled: boolean) {
+    console.log('Setting bidding enabled to:', enabled);
     this.biddingEnabled = enabled;
     if (!enabled) {
       this.stopSimulation();
@@ -84,22 +104,46 @@ export class BiddingService {
   
   // Update the asking price for simulation
   updateAskingPrice(newAskingPrice: number) {
+    console.log('Updating asking price to:', newAskingPrice);
     this.currentAskingPrice = newAskingPrice;
   }
 
   private shouldContinueBidding(): boolean {
-    // Continue bidding if enabled and current bid is less than 110% of reserve price
-    return this.biddingEnabled && 
-           this.currentBidAmount < (this.currentReservePrice * 1.1);
+    // Handle special case for zero reserve price
+    let maxBidAmount: number;
+    
+    if (this.currentReservePrice === 0) {
+      // For lots with zero reserve, continue bidding up to a reasonable limit
+      // Use 10,000 as a default maximum for zero reserve lots
+      maxBidAmount = 10000;
+    } else {
+      // Normal case: continue until 110% of reserve price
+      maxBidAmount = this.currentReservePrice * 1.1;
+    }
+    
+    // Continue bidding if enabled and current bid is less than the maximum
+    const shouldContinue = this.biddingEnabled && this.currentBidAmount < maxBidAmount;
+    
+    if (!shouldContinue) {
+      console.log('Should not continue bidding:', {
+        enabled: this.biddingEnabled,
+        currentBid: this.currentBidAmount,
+        maxBid: maxBidAmount,
+        reservePrice: this.currentReservePrice
+      });
+    }
+    
+    return shouldContinue;
   }
 
   private getRandomInterval(): number {
-    // Random interval between 250ms and 2000ms
-    return Math.floor(Math.random() * 1750) + 250;
+    // Random interval between 2000ms and 4000ms for easier testing
+    return Math.floor(Math.random() * 2000) + 2000;
   }
 
   private generateNewBid() {
     if (!this.availableDealers.length) {
+      console.warn('No dealers available for bid generation');
       return;
     }
 
@@ -136,6 +180,8 @@ export class BiddingService {
     
     // Increment total simulated bids counter
     this.totalSimulatedBids++;
+    
+    console.log('Generated simulated bid:', bid);
     
     // Emit the new bid
     this.bidSubject.next(bid);

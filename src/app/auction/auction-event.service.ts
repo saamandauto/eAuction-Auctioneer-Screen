@@ -1,8 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
 import { AuctionStateService } from './auction-state.service';
-import { Bid, Dealer, LotDetails, Message } from '../models/interfaces';
-import { LotStatus, HammerState } from '../models/enums';
+import { Bid, Dealer, LotDetails } from '../models/interfaces';
+import { LotStatus } from '../models/enums';
 import { AuctionLifecycleService } from '../services/auction-lifecycle.service';
 import { LotManagementService } from '../services/lot-management.service';
 import { BiddingOrchestrationService } from '../services/bidding-orchestration.service';
@@ -10,20 +9,19 @@ import { DialogService } from '../services/dialog.service';
 import { MessagingService } from '../services/messaging.service';
 import { BiddingService } from '../services/bidding.service';
 import { VoiceService } from '../services/voice.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuctionEventService {
-  // Track the last time a bid was announced
-  private lastBidAnnouncementTime = 0;
-  private bidAnnouncementCooldown = 5000; // 5 seconds cooldown between bid announcements
   private hasCreditsError = false;
   
   // Inject dependencies using inject() pattern
   private auctionState = inject(AuctionStateService);
   private biddingService = inject(BiddingService);
   private voiceService = inject(VoiceService);
+  private toastr = inject(ToastrService);
   private auctionLifecycleService = inject(AuctionLifecycleService);
   private lotManagementService = inject(LotManagementService);
   private biddingOrchestrationService = inject(BiddingOrchestrationService);
@@ -31,7 +29,9 @@ export class AuctionEventService {
   private messagingService = inject(MessagingService);
   
   constructor() {
+    // Subscribe to bids from the bidding service
     this.biddingService.getBids().subscribe(bid => {
+      console.log('Received simulated bid:', bid);
       this.onBidPlaced(bid);
     });
     
@@ -41,7 +41,25 @@ export class AuctionEventService {
     
     // Listen for changes to the simulated bidding setting
     this.auctionState.select('simulatedBiddingEnabled').subscribe(enabled => {
+      console.log('Simulated bidding toggled:', enabled);
       this.handleSimulatedBiddingToggle(enabled);
+    });
+
+    // Listen for lot status changes to restart simulation when lot becomes active
+    this.auctionState.select('lotStatus').subscribe(lotStatus => {
+      console.log('Lot status changed to:', lotStatus);
+      
+      if (lotStatus === LotStatus.ACTIVE) {
+        // Lot became active, restart simulation if enabled
+        this.restartSimulationIfEnabled();
+      } else if (lotStatus === LotStatus.PENDING || 
+                 lotStatus === LotStatus.SOLD || 
+                 lotStatus === LotStatus.NO_SALE || 
+                 lotStatus === LotStatus.WITHDRAWN) {
+        // Lot became inactive, stop simulation
+        console.log('Stopping simulation because lot status is:', lotStatus);
+        this.biddingService.stopSimulation();
+      }
     });
   }
 
@@ -50,19 +68,67 @@ export class AuctionEventService {
     // Tell the bidding service about the change
     this.biddingService.setEnabled(enabled);
     
-    if (enabled && 
-        this.auctionState.getValue('lotStatus') === LotStatus.ACTIVE && 
-        this.auctionState.getValue('currentLot')) {
+    if (enabled) {
+      const currentLot = this.auctionState.getValue('currentLot');
+      const lotStatus = this.auctionState.getValue('lotStatus');
       
-      this.biddingService.startSimulation(
-        this.auctionState.getValue('dealers'),
-        this.auctionState.getValue('currentHighestBid') || this.auctionState.getValue('startPrice'),
-        this.auctionState.getValue('bidIncrement'),
-        this.auctionState.getValue('currentLot')!.reservePrice,
-        this.auctionState.getValue('askingPrice')
-      );
-    } else if (!enabled) {
+      if (lotStatus === LotStatus.ACTIVE && currentLot) {
+        console.log('Starting simulation immediately - lot is active');
+        this.startSimulation();
+      } else {
+        // Provide feedback about why simulation isn't starting
+        if (!currentLot) {
+          this.toastr.info('Simulated bidding enabled. Please select a lot to begin simulation.');
+        } else if (lotStatus !== LotStatus.ACTIVE) {
+          this.toastr.info('Simulated bidding enabled. Please start the lot to begin simulation.');
+        }
+      }
+    } else {
+      console.log('Stopping simulation');
       this.biddingService.stopSimulation();
+    }
+  }
+
+  // Helper method to start simulation with current state
+  private startSimulation(): void {
+    const currentLot = this.auctionState.getValue('currentLot');
+    if (!currentLot) {
+      console.warn('Cannot start simulation - no current lot');
+      return;
+    }
+
+    const dealers = this.auctionState.getValue('dealers');
+    const currentHighestBid = this.auctionState.getValue('currentHighestBid');
+    const startPrice = this.auctionState.getValue('startPrice');
+    const bidIncrement = this.auctionState.getValue('bidIncrement');
+    const askingPrice = this.auctionState.getValue('askingPrice');
+
+    console.log('Starting simulation with params:', {
+      dealers: dealers.length,
+      currentHighestBid,
+      startPrice,
+      bidIncrement,
+      reservePrice: currentLot.reservePrice,
+      askingPrice
+    });
+
+    this.biddingService.startSimulation(
+      dealers,
+      currentHighestBid || startPrice,
+      bidIncrement,
+      currentLot.reservePrice,
+      askingPrice
+    );
+
+    this.toastr.success('Simulated bidding started for Lot ' + currentLot.lotNumber);
+  }
+
+  // Public method to restart simulation (called when lot starts)
+  public restartSimulationIfEnabled(): void {
+    const simulatedBiddingEnabled = this.auctionState.getValue('simulatedBiddingEnabled');
+    if (simulatedBiddingEnabled) {
+      console.log('Restarting simulation because lot became active');
+      this.startSimulation();
     }
   }
 

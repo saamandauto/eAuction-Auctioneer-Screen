@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, catchError, of, tap, map, throwError, switchMap, forkJoin } from 'rxjs';
+import { Observable, from, map, catchError, of, throwError, switchMap } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { LotDetails, LotStatus, Bid, LotFinalState, ViewerInfo, DatabaseLot, DatabaseLotFinalState, DatabaseLotBid, DatabaseLotUserActivity } from '../models/interfaces';
 import { environment } from '../../environments/environment';
@@ -25,11 +25,6 @@ export class LotService {
         `)
         .order('lot_number', { ascending: true })
     ).pipe(
-      tap(response => {
-        if (response.error) {
-          // Error in Supabase response
-        }
-      }),
       map(({ data, error }) => {
         if (error) {
           throw error;
@@ -43,8 +38,8 @@ export class LotService {
         const dbLots = data as DatabaseLot[];
         return dbLots.map(lot => this.mapDbLotToLotDetails(lot));
       }),
-      catchError(err => {
-        // Return an empty array on error
+      catchError((err: any) => {
+        console.error('Error fetching lots:', err);
         return of([]);
       })
     );
@@ -104,7 +99,7 @@ export class LotService {
           lastActive: item.last_active
         }));
       }),
-      catchError(err => {
+      catchError((err: any) => {
         console.error(`Error in getLotUserActivity for lot ${lotNumber}:`, err);
         return of([]);
       })
@@ -160,7 +155,7 @@ export class LotService {
         const dbLots = data as DatabaseLot[];
         return this.mapDbLotToLotDetails(dbLots[0]);
       }),
-      catchError(err => {
+      catchError((err: any) => {
         return throwError(() => new Error(`Failed to update lot in Supabase: ${err.message}`));
       })
     );
@@ -238,8 +233,9 @@ export class LotService {
               // Return the updated lot
               return lot;
             }),
-            catchError(bidsError => {
+            catchError((bidsError: any) => {
               // Even if bids fail to save, return the lot
+              console.error('Error saving bids:', bidsError);
               return of(lot);
             })
           );
@@ -248,7 +244,7 @@ export class LotService {
           return of(lot);
         }
       }),
-      catchError(err => {
+      catchError((err: any) => {
         return throwError(() => new Error(`Failed to save lot final state: ${err.message}`));
       })
     );
@@ -294,12 +290,13 @@ export class LotService {
         return response.json();
       })
     ).pipe(
-      tap(result => {
+      map(result => {
         if (!result.success) {
           throw new Error(`Failed to seed lots: ${result.error || 'Unknown error'}`);
         }
+        return result;
       }),
-      catchError(err => {
+      catchError((err: any) => {
         // Return a proper error instead of a fake success object
         return throwError(() => new Error(`Failed to seed lots in Supabase: ${err.message}`));
       })
@@ -346,12 +343,13 @@ export class LotService {
         return response.json();
       })
     ).pipe(
-      tap(result => {
+      map(result => {
         if (!result.success) {
           throw new Error(`Failed to seed lot user activity: ${result.error || 'Unknown error'}`);
         }
+        return result;
       }),
-      catchError(err => {
+      catchError((err: any) => {
         return throwError(() => new Error(`Failed to seed lot user activity in Supabase: ${err.message}`));
       })
     );
@@ -455,7 +453,8 @@ export class LotService {
           country: bid.country
         }));
       }),
-      catchError(err => {
+      catchError((err: any) => {
+        console.error('Error fetching bids:', err);
         return of([]);
       })
     );

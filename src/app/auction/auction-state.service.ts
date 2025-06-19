@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, from, catchError, of, tap, map, combineLatest } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, of, tap, map, combineLatest } from 'rxjs';
 import { Bid, Dealer, LotDetails, Message } from '../models/interfaces';
 import { LotStatus, HammerState } from '../models/enums';
 import { DealerService } from '../services/dealer.service';
@@ -159,9 +159,11 @@ export class AuctionStateService {
   private loadDealers(): Observable<Dealer[]> {
     return this.dealerService.getDealers().pipe(
       tap(dealers => {
+        console.log(`Loaded ${dealers.length} dealers from database/fallback`);
         this.dealers$.next(dealers);
       }),
       catchError(error => {
+        console.error('Error loading dealers:', error);
         return of([]);
       })
     );
@@ -174,6 +176,7 @@ export class AuctionStateService {
         this.processLoadedLots(lots);
       }),
       catchError(error => {
+        console.error('Error loading lots:', error);
         return of([]);
       })
     ).subscribe();
@@ -181,6 +184,7 @@ export class AuctionStateService {
   
   // Helper method to process loaded lots
   private processLoadedLots(lots: LotDetails[]): void {
+    console.log(`Loaded ${lots.length} lots from database`);
     this.lots$.next(lots);
     
     // Initialize currentLot

@@ -59,7 +59,8 @@ export class LotManagementService {
   startLot(): void {
     this.auctionState.setState({
       lotStatus: LotStatus.ACTIVE,
-      canUseHammer: false
+      canUseHammer: false,
+      canControlLot: true  // Ensure lot controls are enabled when lot is active
     });
     
     const currentLot = this.auctionState.getValue('currentLot');
@@ -74,19 +75,10 @@ export class LotManagementService {
       this.voiceService.speak(lotDetails);
     }
 
-    // Start simulation if enabled
-    if (this.auctionState.getValue('simulatedBiddingEnabled') && currentLot) {
-      this.biddingService.startSimulation(
-        this.auctionState.getValue('dealers'),
-        this.auctionState.getValue('currentHighestBid') || this.auctionState.getValue('startPrice'),
-        this.auctionState.getValue('bidIncrement'),
-        currentLot.reservePrice,
-        this.auctionState.getValue('askingPrice')
-      );
-    }
-    
     // Reset the reserve met announced set when starting a new lot
     this.lotsReserveMetAnnounced.clear();
+    
+    // Note: Simulation restart is now handled by AuctionEventService observing lotStatus changes
   }
 
   moveLot(): void {

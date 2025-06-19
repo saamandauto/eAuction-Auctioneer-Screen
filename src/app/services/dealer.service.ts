@@ -1,6 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, catchError, of, tap, map } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { Observable, catchError, of, tap, map, from } from 'rxjs';
 import { Dealer, DatabaseDealer, databaseToDealerModel } from '../models/interfaces';
 import { SupabaseService } from './supabase.service';
 
@@ -111,19 +110,14 @@ export class DealerService {
    * @returns Observable<Dealer[]> - Array of dealers in the unified format
    */
   getDealers(): Observable<Dealer[]> {
-    return from(
-      this.supabaseService.getClient()
-        .from('loggedInDealers')
-        .select('*')
-    ).pipe(
-      tap(response => {
-        if (response.error) {
-          console.warn('Error fetching dealers from Supabase:', response.error);
-        }
-      }),
+    const supabaseQuery = this.supabaseService.getClient()
+      .from('loggedInDealers')
+      .select('*');
+
+    return from(supabaseQuery).pipe(
       map(({ data, error }) => {
         if (error) {
-          throw error;
+          console.warn('Error fetching dealers from Supabase:', error);
         }
         
         let databaseDealers: DatabaseDealer[];
@@ -140,7 +134,7 @@ export class DealerService {
         // Transform all DatabaseDealer objects to unified Dealer format
         return this.transformDealersFromDatabase(databaseDealers);
       }),
-      catchError(err => {
+      catchError((err: any) => {
         console.error('Error in getDealers:', err);
         const combinedFallback = [...this.fallbackDealers, ...this.mockBidUsers];
         return of(this.transformDealersFromDatabase(combinedFallback));

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { Message, Dealer } from '../../models/interfaces';
-import { AuctionService } from '../../services/auction.service';
 import { MessagesPanelComponent } from '../../components/messages-panel/messages-panel.component';
 
 @Component({
@@ -25,7 +24,6 @@ export class MessagingComponent {
   @Output() selectDealer = new EventEmitter<Dealer | null>();
 
   // Inject dependencies
-  private auctionService = inject(AuctionService);
   private toastr = inject(ToastrService);
 
   onSelectDealer(dealer: Dealer | null) {

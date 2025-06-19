@@ -25,10 +25,10 @@ export class LotsListComponent implements OnInit, OnChanges, OnDestroy {
   @Input() currentLotStatus: LotStatus = LotStatus.PENDING;
   @Output() selectLot = new EventEmitter<LotDetails>();
 
-  expanded = false; // Removed ': boolean'
-  searchTerm = ''; // Removed ': string'
+  expanded = false;
+  searchTerm = '';
   selectedLot: LotDetails | null = null;
-  isResultDialogOpen = false; // Removed ': boolean'
+  isResultDialogOpen = false;
 
   // Internal state subjects
   private filteredLotsSubject = new BehaviorSubject<LotDetails[]>([]);
@@ -105,7 +105,7 @@ export class LotsListComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  // Proper close handler for dialog - no empty function
+  // Proper close handler for dialog using the new event emitter pattern
   closeResultDialog(): void {
     this.isResultDialogOpen = false;
     this.selectedLot = null;

@@ -44,21 +44,21 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   editMode: {[key: number]: {reservePrice: boolean, initialAskingPrice: boolean}} = {};
   
   // Sorting state
-  sortColumn = 'lotNumber'; // Removed ': string'
+  sortColumn = 'lotNumber';
   sortDirection: SortDirection = 'asc';
   
   // View mode (compact or detailed)
   viewMode: 'compact' | 'detailed' = 'compact';
   
   // Reordering state
-  isDragEnabled = false; // Removed ': boolean'
+  isDragEnabled = false;
   
   // Dialog state
   selectedLot: LotDetails | null = null;
-  isViewersDialogOpen = false; // Removed ': boolean'
-  isWatchersDialogOpen = false; // Removed ': boolean'
-  isLeadsDialogOpen = false; // Removed ': boolean'
-  isOnlineDialogOpen = false; // Removed ': boolean'
+  isViewersDialogOpen = false;
+  isWatchersDialogOpen = false;
+  isLeadsDialogOpen = false;
+  isOnlineDialogOpen = false;
   viewers: ViewerInfo[] = [];
   watchers: ViewerInfo[] = [];
   leads: ViewerInfo[] = [];
@@ -128,9 +128,7 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   }
   
   ngOnInit() {
-    this.updateToggleVisibility();
     this.updateInternalState();
-    window.addEventListener('resize', this.updateToggleVisibility.bind(this));
   }
   
   ngOnChanges() {
@@ -138,17 +136,12 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
   }
   
   ngOnDestroy() {
-    window.removeEventListener('resize', this.updateToggleVisibility.bind(this));
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   private updateInternalState() {
     this.lotsSubject.next(this.lots);
-  }
-  
-  updateToggleVisibility() {
-    // isToggleVisible calculation is now handled in the viewState$ observable
   }
   
   // Toggle between compact and detailed view
@@ -192,7 +185,7 @@ export class PlannedLotsComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
   
-  // Handle drop event for drag and drop - remove unused dragItem parameter
+  // Handle drop event for drag and drop
   onDrop(event: CdkDragDrop<LotDetails[]>): void {
     if (this.isDragEnabled) {
       // First make a copy of the array to maintain immutability

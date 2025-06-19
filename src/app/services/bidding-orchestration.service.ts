@@ -4,7 +4,6 @@ import { VoiceService } from './voice.service';
 import { SoundService } from './sound.service';
 import { BiddingService } from './bidding.service';
 import { AuctionStateService } from '../auction/auction-state.service';
-import { AuctionService } from './auction.service';
 import { Bid } from '../models/interfaces';
 import { HammerState } from '../models/enums';
 import { AuctionStatsService } from './auction-stats.service';
@@ -14,13 +13,9 @@ import { AuctionStatsService } from './auction-stats.service';
 })
 export class BiddingOrchestrationService {
   private hasCreditsError = false;
-  // Track the last time a bid was announced
-  private lastBidAnnouncementTime = 0;
-  private bidAnnouncementCooldown = 5000; // 5 seconds cooldown between bid announcements
 
   // Inject dependencies
   private auctionState = inject(AuctionStateService);
-  private auctionService = inject(AuctionService);
   private biddingService = inject(BiddingService);
   private voiceService = inject(VoiceService);
   private soundService = inject(SoundService);
@@ -109,9 +104,6 @@ export class BiddingOrchestrationService {
         this.soundService.playBidNotification();
       }
     }
-    
-    // Update bid announcement time
-    this.lastBidAnnouncementTime = Date.now();
   }
 
   onAuctioneerBidCountChanged(): void {

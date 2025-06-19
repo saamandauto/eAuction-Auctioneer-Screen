@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../environments/environment';
-import { SupabaseService } from './supabase.service';
 import { LocalizationService } from './localization.service';
 
 @Injectable({
@@ -25,7 +24,6 @@ export class VoiceService {
 
   // Inject dependencies using inject() pattern
   private toastr = inject(ToastrService);
-  private supabaseService = inject(SupabaseService);
   private localizationService = inject(LocalizationService);
 
   constructor() {
@@ -310,34 +308,6 @@ export class VoiceService {
     }
     
     return bytes.buffer;
-  }
-  
-  private getUserFriendlyErrorMessage(error: unknown): string {
-    const errorMsg = this.getErrorMessage(error);
-    
-    // Check for specific error patterns and provide user-friendly messages
-    if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
-      return 'Unable to connect to the audio service. Please check your internet connection.';
-    }
-    
-    if (errorMsg.includes('authentication failed') || errorMsg.includes('API key') || errorMsg.includes('401')) {
-      return 'Your ElevenLabs API credits have been exhausted or the API key is invalid.';
-    }
-    
-    if (errorMsg.includes('Edge function')) {
-      return 'The audio assistant service is currently unavailable. Please try again later.';
-    }
-    
-    if (errorMsg.includes('AudioContext')) {
-      return 'Your browser does not support audio playback required for the audio assistant.';
-    }
-    
-    if (errorMsg.includes('Maximum call stack size exceeded')) {
-      return 'The audio service is experiencing technical difficulties. Please try again later.';
-    }
-    
-    // Default message for unknown errors
-    return 'Audio assistant encountered an issue. Please try again later.';
   }
   
   private getErrorMessage(error: unknown): string {

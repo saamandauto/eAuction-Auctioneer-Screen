@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, map, catchError, of, tap } from 'rxjs';
+import { Observable, from, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { AuctionData, DatabaseAuction } from '../models/interfaces';
 import { ToastrService } from 'ngx-toastr';
@@ -29,13 +30,13 @@ export class AuctionDataService {
    * If no auction data is found, the default values will be returned
    */
   getAuctionData(): Observable<AuctionData> {
-    return from(
-      this.supabaseService.getClient()
-        .from('auction')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-    ).pipe(
+    const supabaseQuery = this.supabaseService.getClient()
+      .from('auction')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    return from(supabaseQuery).pipe(
       map(({ data, error }) => {
         if (error) {
           throw error;
@@ -60,10 +61,11 @@ export class AuctionDataService {
           createdAt: auction.created_at
         };
       }),
-      catchError(error => {
+      catchError((error: any) => {
         console.error('Error fetching auction data:', error);
         this.toastr.error('Failed to load auction data. Using default values.');
-        return of(this.defaultAuction);
+        // Return default auction data instead of throwing error
+        return [this.defaultAuction];
       })
     );
   }
@@ -82,12 +84,12 @@ export class AuctionDataService {
       default_currency: auction.defaultCurrency
     };
 
-    return from(
-      this.supabaseService.getClient()
-        .from('auction')
-        .upsert(dbAuction)
-        .select()
-    ).pipe(
+    const supabaseQuery = this.supabaseService.getClient()
+      .from('auction')
+      .upsert(dbAuction)
+      .select();
+
+    return from(supabaseQuery).pipe(
       map(({ data, error }) => {
         if (error) {
           throw error;
@@ -111,10 +113,10 @@ export class AuctionDataService {
           createdAt: savedAuction.created_at
         };
       }),
-      catchError(error => {
+      catchError((error: any) => {
         console.error('Error saving auction data:', error);
         this.toastr.error('Failed to save auction data');
-        throw error;
+        return throwError(() => error);
       })
     );
   }

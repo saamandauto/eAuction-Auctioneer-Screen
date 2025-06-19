@@ -3,7 +3,7 @@ import { AuctionStateService } from '../auction/auction-state.service';
 import { AuctionService } from './auction.service';
 import { SupabaseService } from './supabase.service';
 import { Dealer, Message, DatabaseMessage } from '../models/interfaces';
-import { Observable, from, map, catchError, of, tap } from 'rxjs';
+import { Observable, from, map, catchError, of } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { getDealerId } from '../utils/dealer-utils';
 
@@ -86,7 +86,7 @@ export class MessagingService {
           isRead: message.is_read
         }));
       }),
-      catchError(error => {
+      catchError((error: any) => {
         console.error('Error fetching messages:', error);
         return of([]);
       })
@@ -103,7 +103,7 @@ export class MessagingService {
         .eq('is_read', false)
     ).pipe(
       map(() => undefined),
-      catchError(error => {
+      catchError((error: any) => {
         console.error('Error marking messages as read:', error);
         return of(undefined);
       })
@@ -155,7 +155,7 @@ export class MessagingService {
         
         return message;
       }),
-      catchError(error => {
+      catchError((error: any) => {
         console.error('Error sending message:', error);
         this.toastr.error('Failed to send message. Please try again.');
         

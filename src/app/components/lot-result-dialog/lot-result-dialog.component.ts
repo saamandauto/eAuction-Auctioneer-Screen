@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LotDetails, Bid } from '../../models/interfaces';
 import { LotStatus } from '../../models/enums';
@@ -14,7 +14,7 @@ import { FormatPricePipe } from '../../pipes/format-price.pipe';
 export class LotResultDialogComponent {
   @Input() isOpen = false;
   @Input() lot: LotDetails | null = null;
-  @Input() onClose?: () => void; // Made optional, removed empty default function
+  @Output() dialogClose = new EventEmitter<void>(); // Use Angular event emitter pattern
 
   LotStatus = LotStatus; // Make enum available in template
 
@@ -26,11 +26,9 @@ export class LotResultDialogComponent {
     return this.finalState?.bids || [];
   }
 
-  // Handle close with proper null checking
+  // Handle close with proper event emission
   handleClose(): void {
-    if (this.onClose) {
-      this.onClose();
-    }
+    this.dialogClose.emit();
   }
 
   getBidderTooltip(bid: Bid): string {

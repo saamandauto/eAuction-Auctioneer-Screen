@@ -1,6 +1,5 @@
 import { Injectable, inject } from '@angular/core';
 import { AuctionStateService } from '../auction/auction-state.service';
-import { LotUserActivityService } from './lot-user-activity.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +7,6 @@ import { LotUserActivityService } from './lot-user-activity.service';
 export class DialogService {
   // Inject dependencies
   private auctionState = inject(AuctionStateService);
-  private lotUserActivityService = inject(LotUserActivityService);
 
   openViewersDialog(): void {
     this.auctionState.setState({ isViewersDialogOpen: true });

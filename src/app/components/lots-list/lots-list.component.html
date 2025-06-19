@@ -68,5 +68,5 @@
 <app-lot-result-dialog
   [isOpen]="isResultDialogOpen"
   [lot]="selectedLot"
-  [onClose]="closeResultDialog">
+  (dialogClose)="closeResultDialog()">
 </app-lot-result-dialog>

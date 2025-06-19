@@ -274,7 +274,7 @@ export class LotControlsComponent implements OnChanges, OnDestroy {
     this.withdrawCountdownValue = 5;
     
     // Start animation
-    this.startDotAnimation(true);
+    this.startDotAnimation();
 
     // Start countdown
     this.withdrawCountdownTimer = window.setTimeout(() => this.updateWithdrawCountdown(), 1000);
@@ -434,8 +434,8 @@ export class LotControlsComponent implements OnChanges, OnDestroy {
     }
   }
 
-  // Improved animation logic that handles both dots for hammer and withdraw
-  private startDotAnimation(isWithdraw = false) {
+  // Simplified animation logic - removed unused isWithdraw parameter
+  private startDotAnimation() {
     // Stop any existing animation first
     this.stopDotAnimation();
     
